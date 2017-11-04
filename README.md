@@ -4,7 +4,7 @@ I've recently started authoring Docker images and I realized that the Docker Hub
 
 So I've decided to build **Dave**. It is an acronym for _Docker Authoring made Very Easy_. Not really. But it did come from somewhere. Here's a hint.
 
-![](https://media.giphy.com/media/26u40kQ2cMJhb9y3S/giphy.gif)
+![](https://raw.githubusercontent.com/aa8y/dave/master/.images/dave.gif)
 
 It is still work in progress. So suffice to many things might change. Hopefully not too many though.
 
