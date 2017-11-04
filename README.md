@@ -23,13 +23,14 @@ All templating is done using [Mustache](https://mustache.github.io/)
 
 Here's a sample format.
 
-```
+```yaml
 defaults:
   parameters:
     repository: aa8y/spark
     hadoopVersion: 2.7.4
   templates:
     push: docker push {{{repository}}}:{{tag}}
+    test: docker run --rm -it {{{repository}}}:{{tag}} spark-shell --version
 contexts:
   stable:
     key: sparkVersion
@@ -71,20 +72,21 @@ contexts:
 
 Let's go through it part by part. Here's the first part.
 
-```
+```yaml
 defaults:
   parameters:
     repository: aa8y/spark
     hadoopVersion: 2.7.4
   templates:
     push: docker push {{{repository}}}:{{tag}}
+    test: docker run --rm -it {{{repository}}}:{{tag}} spark-shell --version
 ```
 
-This first part of the manifest, `defaults` refers to the global defaults that would be assigned to all tags. Supported default keys are `parameters` and `templates`. `parameters` contains parameters for the build and push templates. And `templates` contains the Docker build and push Mustache templates. Here, we used the `{{{}}}` for the repository vs `{{}}` for the tag as the former contains a `/` which would otherwise be HTML-encoded. These defaults can be overridden by redefining the keys on any level from where they'll trickle down to the lowest level, i.e. for each tag.
+This first part of the manifest, `defaults` refers to the global defaults that would be assigned to all tags. Supported default keys are `parameters` and `templates`. `parameters` contains parameters for the build, push and test templates. And `templates` contains the Docker build, push and test Mustache templates. Here, we used the `{{{}}}` for the repository vs `{{}}` for the tag as the former contains a `/` which would otherwise be HTML-encoded. These defaults can be overridden by redefining the keys on any level from where they'll trickle down to the lowest level, i.e. for each tag.
 
 Here's the second part.
 
-```
+```yaml
 contexts:
   stable:
     ...
@@ -96,7 +98,7 @@ The second part of the manifest, `contexts` refers to a Docker context. That bas
 
 Here's the next part.
 
-```
+```yaml
 stable:
   key: sparkVersion
   templates:
@@ -121,7 +123,7 @@ stable:
 
 And here's the last part.
 
-```
+```yaml
 edge:
   parameters:
     scalaVersion: '2.11'
