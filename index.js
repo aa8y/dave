@@ -1,5 +1,5 @@
 const async = require('async')
-const metadata = require('./lib/metadata')
+const manifest = require('./lib/manifest')
 const yargs = require('./lib/yargs')
 
 const { exec } = require('child_process')
@@ -8,7 +8,7 @@ function run(command, cb) {
   if (!command) return cb(new Error('Command not defined in manifest.'))
   console.log(`Running: ${command}.`)
 
-  exec(build, (err, stdout, stderr) => {
+  exec(command, (err, stdout, stderr) => {
     if (err) {
       console.log(stderr)
       return cb(err)
@@ -31,19 +31,19 @@ function runAll(commands, cb) {
 function main(cb) {
   const argv = yargs.argv()
 
-  metadata.getManifest((err, manifest) => {
+  manifest.getMetadata((err, metadata) => {
     if (err) return cb(err)
-    const globalDefaults = metadata.getGlobalDefaults(manifest)
-    const contexts = argv.context ? [argv.context] : metadata.getContexts(manifest)
+    const globalDefaults = manifest.getGlobalDefaults(metadata)
+    const contexts = argv.context ? [argv.context] : manifest.getContexts(metadata)
 
     async.map(contexts, (context, cb) => {
-      const contextMeta = metadata.getContextMeta(context, manifest)
-      const defaults = metadata.getDefaults(contextMeta, globalDefaults)
-      const tags = argv.tags ? argv.tags : metadata.getTags(contextMeta)
+      const contextMeta = manifest.getContextMeta(context, metadata)
+      const defaults = manifest.getDefaults(contextMeta, globalDefaults)
+      const tags = argv.tags ? argv.tags : manifest.getTags(contextMeta)
 
       async.map((tags), (tag, cb) => {
-        const tagMeta = metadata.getTagMeta(tag, contextMeta, defaults)
-        const tagCommands = metadata.getTagCommands(tagMeta)
+        const tagMeta = manifest.getTagMeta(tag, contextMeta, defaults)
+        const tagCommands = manifest.getTagCommands(tagMeta)
         const { build, push, test } = tagCommands
 
         if (argv.command == 'build') return run(build, cb)
