@@ -38,11 +38,10 @@ function main(cb) {
 
     async.map(contexts, (context, cb) => {
       const contextMeta = manifest.getContextMeta(context, metadata)
-      const defaults = manifest.getDefaults(contextMeta, globalDefaults)
       const tags = argv.tags ? argv.tags : manifest.getTags(contextMeta)
 
       async.map((tags), (tag, cb) => {
-        const tagMeta = manifest.getTagMeta(tag, contextMeta, defaults)
+        const tagMeta = manifest.getTagMeta(tag, contextMeta, globalDefaults)
         const tagCommands = manifest.getTagCommands(tagMeta)
         const { build, push, test } = tagCommands
 
