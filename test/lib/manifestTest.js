@@ -13,9 +13,10 @@ describe('lib/manifest', () => {
       'edge': { templates: { test } },
       'stable': { parameters: { bar: 'metalRod' } }
     } }
+
     it('returns an object with the context if no contexts are present in the metadata.', () => {
-      const expected = { context: '.' }
       const computed = manifest.getContextMeta('.', {})
+      const expected = { context: '.' }
 
       assert.deepEqual(computed, expected)
     })
@@ -112,12 +113,58 @@ describe('lib/manifest', () => {
       assert.deepEqual(computed, expected)
     })
   })
+  describe('getTagKeyMeta()', () => {
+    const tagKeys = ['foo', 'bar']
+    const tags = { '2.2.0': {} }
+
+    it('should get just the tag when no tag keys are present.', () => {
+      const computed = manifest.getTagKeyMeta({ tags }, '2.2.0')
+      const expected = { tag: '2.2.0' }
+
+      assert.deepEqual(computed, expected)
+    })
+    it('should get the tag keys and the tag when the former are present.', () => {
+      const expected = {
+        foo: '2.2.0',
+        bar: '2.2.0',
+        tag: '2.2.0'
+      }
+      const computed = manifest.getTagKeyMeta({ tagKeys, tags }, '2.2.0')
+
+      assert.deepEqual(computed, expected)
+    })
+  })
+  describe('getTagKeys()', () => {
+    const tagKeys = ['foo', 'bar', 'baz']
+
+    it('should return an empty array is no tag keys are present.', () => {
+      const computed = manifest.getTagKeys({})
+
+      assert.deepEqual(computed, [])
+    })
+    it('should return the tag keys when present.', () => {
+      const computed = manifest.getTagKeys({ tagKeys })
+
+      assert.deepEqual(computed, tagKeys)
+    })
+    it('should support kebab-case.',  () => {
+      const computed = manifest.getTagKeys({ 'tag-keys': tagKeys })
+
+      assert.deepEqual(computed, tagKeys)
+    })
+    it('should support snake_case.',  () => {
+      const computed = manifest.getTagKeys({ tag_keys: tagKeys })
+
+      assert.deepEqual(computed, tagKeys)
+    })
+  })
   describe('getTagMeta()', () => {
     const globalDefaults = {
       parameters: { bar: 'metalRod' },
       templates: { push }
     }
     const contextMeta = {
+      tagKeys: ['foo'],
       parameters: { bar: 'exam' },
       templates: { build: 'builder' },
       tags: {
@@ -126,10 +173,12 @@ describe('lib/manifest', () => {
         '1.6.1': {}
       }
     }
+
     it('returns all the defaults if no tag-specific metadata is present.', () => {
       const expected = {
         bar: 'exam',
         build: 'builder',
+        foo: '1.6.1',
         push,
         tag: '1.6.1'
       }
@@ -140,7 +189,10 @@ describe('lib/manifest', () => {
     it('returns defaults overridden by tag-specific metadata when present.', () => {
       const expected = {
         bar: 'airPressure',
-        build, push, test,
+        build,
+        foo: '2.2.0',
+        push,
+        test,
         tag: '2.2.0'
       }
       const computed = manifest.getTagMeta('2.2.0', contextMeta, globalDefaults)

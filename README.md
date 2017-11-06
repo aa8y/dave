@@ -33,7 +33,8 @@ defaults:
     test: docker run --rm -it {{{repository}}}:{{tag}} spark-shell --version
 contexts:
   stable:
-    key: sparkVersion
+    tagKeys:
+      - sparkVersion
     templates:
       build: >
         docker build -t {{{repository}}}:{{tag}}
@@ -100,7 +101,8 @@ Here's the next part.
 
 ```yaml
 stable:
-  key: sparkVersion
+  tagKeys:
+    - sparkVersion
   templates:
     build: >
       docker build -t {{{repository}}}:{{tag}}
@@ -119,7 +121,7 @@ stable:
       sparkVersion: 2.2.0
 ```
 
-`tags` refers to the tags which would be build. In the aforementioned snippet, we would therefore be building 5 tags for the `stable` context. The build command for each of these tags would be the one defined in the local templates and the push command would be the one in the global templates discussed before (`defaults`). The key of the tags is always populates the `tag` variable and can be used in templates. If the same value needs to be assigned to an additional key, it can be defined using the `key` key. So, for example, in the above snippet the value of `sparkVersion` for tag `1.6.3` would be `1.6.3` and `2.2.0` would get the value of `hadoopVersion` from the global defaults.
+`tags` refers to the tags which would be built. In the aforementioned snippet, we would therefore be building 5 tags for the `stable` context. The build command for each of these tags would be the one defined in the local templates and the push command would be the one in the global templates discussed before (`defaults`). The key of the tags always populates the `tag` variable along with any tag keys, if present, and can be used in templates. If the same value needs to be assigned to additional keys, they can be defined using the `tagKeys` key. So, for example, in the above snippet the value of `sparkVersion` for tag `1.6.3` would be `1.6.3` whereas `2.2` would override the value from its tag-specific parameters.
 
 And here's the last part.
 
@@ -146,7 +148,7 @@ edge:
 
 In the last part, the only special thing to be seen is a new local global parameter, `scalaVersion` has been defined. This would then be assigned to each tag and can also be overridden as it is for the `edge-1.6` tag.
 
-And while the manifest file can be named anything, the default name assumed is `manifest.yml`. Also, although the sample has keys in `lowerCamelCase`, there is no set rule to do so. If you like other formats, go for it.
+And while the manifest file can be named anything, the default name assumed is `manifest.yml`. Also, although the sample has keys in `lowerCamelCase`, `lower_snake_case` and `lower-kebab-case` is also supported.
 
 ### Examples
 
