@@ -158,7 +158,7 @@ TODO
 
 The plan is to publish this to [NPM](https://www.npmjs.com) so that it can be installed and used like a common binary. More instructions to follow once that has been done.
 
-### TODO
+### Future Work
 
 * Add support for templating `Dockerfile`s. I expect to add this in the 0.2.0 release.
 * Verify the metadata read from the manifest against a schema.
