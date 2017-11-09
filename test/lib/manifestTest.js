@@ -8,32 +8,81 @@ const push = 'docker push {{{repository}}}:{{tag}}'
 const test = 'docker run --rm -it {{{repository}}}:{{tag}} test.sh'
 
 describe('lib/manifest', () => {
-  describe('getContextMeta()', () => {
-    const metadata = { contexts: {
-      'edge': { templates: { test } },
-      'stable': { parameters: { bar: 'metalRod' } }
-    } }
+  describe('getContextCommands()', () => {
+    const contextMeta = {
+      tagKeys: ['foo'],
+      parameters: {
+        bar: 'exam',
+        context: 'stable',
+        repository: 'aa8y/foo'
+      },
+      templates: { build, push, test },
+      tags: {
+        'latest': { bar: 'airPressure' },
+        '2.2.0': { bar: 'airPressure' },
+        '1.6.1': {}
+      }
+    }
 
-    it('returns an object with the context if no contexts are present in the metadata.', () => {
-      const computed = manifest.getContextMeta('.', {})
-      const expected = { context: '.' }
+    it('returns all commands for tags and command types in the context metadata.', () => {
+      const expected = {
+        build: [
+          'docker build -t aa8y/foo:1.6.1 --build-arg BAR=exam stable',
+          'docker build -t aa8y/foo:2.2.0 --build-arg BAR=airPressure stable',
+          'docker build -t aa8y/foo:latest --build-arg BAR=airPressure stable'
+        ],
+        test: [
+          'docker run --rm -it aa8y/foo:1.6.1 test.sh',
+          'docker run --rm -it aa8y/foo:2.2.0 test.sh',
+          'docker run --rm -it aa8y/foo:latest test.sh'
+        ],
+        push: [
+          'docker push aa8y/foo:1.6.1',
+          'docker push aa8y/foo:2.2.0',
+          'docker push aa8y/foo:latest'
+        ]
+      }
+      const computed = manifest.getContextCommands(contextMeta)
 
       assert.deepEqual(computed, expected)
     })
-    it('returns an object with the context if a context is not present in the metadata.', () => {
-      const expected = { context: '.' }
+  })
+  describe('getContextMeta()', () => {
+    const metadata = {
+      defaults: {
+        parameters: { bar: 'metalRod' },
+        templates: { push }
+      },
+      contexts: {
+        edge: {
+          templates: { test }
+        },
+        stable: {
+          parameters: { bar: 'exam' }
+        }
+      }
+    }
+
+    it('returns an empty object if no contexts are present in the metadata.', () => {
+      const computed = manifest.getContextMeta('.', {})
+
+      assert.deepEqual(computed, {})
+    })
+    it('returns an empty object if the context is not present in the metadata.', () => {
       const computed = manifest.getContextMeta('.', metadata)
 
-      assert.deepEqual(computed, expected)
+      assert.deepEqual(computed, {})
     })
     it('returns the context-specific metadata when present.', () => {
       const expected1 = {
         context: 'edge',
-        templates: { test }
+        parameters: { bar: 'metalRod' },
+        templates: { test, push }
       }
       const expected2 = {
         context: 'stable',
-        parameters: { bar: 'metalRod' }
+        parameters: { bar: 'exam' },
+        templates: { push }
       }
       const computed1 = manifest.getContextMeta('edge', metadata)
       const computed2 = manifest.getContextMeta('stable', metadata)
@@ -95,15 +144,16 @@ describe('lib/manifest', () => {
     })
   })
   describe('getTagCommands()', () => {
-    it('returns commands rendered with values in tag metadata.', () => {
-      const tagMeta = {
+    const tagMeta = {
+      parameters: {
         bar: 'exam',
-        build,
         context: 'stable',
-        push,
         repository,
         tag: '1.6.1'
-      }
+      },
+      templates: { build, push }
+    }
+    it('returns commands rendered with values in tag metadata.', () => {
       const expected = {
         build: 'docker build -t aa8y/foo:1.6.1 --build-arg BAR=exam stable',
         push: 'docker push aa8y/foo:1.6.1'
@@ -112,9 +162,15 @@ describe('lib/manifest', () => {
 
       assert.deepEqual(computed, expected)
     })
+    it('returns commands rendered with values in tag metadata filtered by the types passed.', () => {
+      const expected = { push: 'docker push aa8y/foo:1.6.1' }
+      const computed = manifest.getTagCommands(tagMeta, ['push'])
+
+      assert.deepEqual(computed, expected)
+    })
   })
   describe('getTagKeyMeta()', () => {
-    const tagKeys = ['foo', 'bar']
+    const tagKeys = ['bar', 'foo']
     const tags = { '2.2.0': {} }
 
     it('should get just the tag when no tag keys are present.', () => {
@@ -136,66 +192,65 @@ describe('lib/manifest', () => {
   })
   describe('getTagKeys()', () => {
     const tagKeys = ['foo', 'bar', 'baz']
+    const allTagKeys = ['bar', 'baz', 'foo', 'tag']
 
-    it('should return an empty array is no tag keys are present.', () => {
+    it(`should return an array with 'tag' if no tag keys are present.`, () => {
+      const expected = ['tag']
       const computed = manifest.getTagKeys({})
 
-      assert.deepEqual(computed, [])
+      assert.deepEqual(computed, expected)
     })
-    it('should return the tag keys when present.', () => {
+    it(`should return the tag keys when present, with 'tag', sorted lexicographically.`, () => {
       const computed = manifest.getTagKeys({ tagKeys })
 
-      assert.deepEqual(computed, tagKeys)
+      assert.deepEqual(computed, allTagKeys)
     })
     it('should support kebab-case.',  () => {
       const computed = manifest.getTagKeys({ 'tag-keys': tagKeys })
 
-      assert.deepEqual(computed, tagKeys)
+      assert.deepEqual(computed, allTagKeys)
     })
     it('should support snake_case.',  () => {
       const computed = manifest.getTagKeys({ tag_keys: tagKeys })
 
-      assert.deepEqual(computed, tagKeys)
+      assert.deepEqual(computed, allTagKeys)
     })
   })
   describe('getTagMeta()', () => {
-    const globalDefaults = {
-      parameters: { bar: 'metalRod' },
-      templates: { push }
-    }
     const contextMeta = {
       tagKeys: ['foo'],
       parameters: { bar: 'exam' },
-      templates: { build: 'builder' },
+      templates: { build, push, test },
       tags: {
-        'latest': { bar: 'airPressure', build, test },
-        '2.2.0': { bar: 'airPressure', build, test },
+        'latest': { bar: 'airPressure' },
+        '2.2.0': { bar: 'airPressure' },
         '1.6.1': {}
       }
     }
 
     it('returns all the defaults if no tag-specific metadata is present.', () => {
       const expected = {
-        bar: 'exam',
-        build: 'builder',
-        foo: '1.6.1',
-        push,
-        tag: '1.6.1'
+        parameters: {
+          bar: 'exam',
+          foo: '1.6.1',
+          tag: '1.6.1'
+        },
+        templates: { build, test, push }
       }
-      const computed = manifest.getTagMeta('1.6.1', contextMeta, globalDefaults)
+      const computed = manifest.getTagMeta('1.6.1', contextMeta)
 
       assert.deepEqual(computed, expected)
     })
     it('returns defaults overridden by tag-specific metadata when present.', () => {
       const expected = {
-        bar: 'airPressure',
-        build,
-        foo: '2.2.0',
-        push,
-        test,
-        tag: '2.2.0'
+        parameters: {
+          bar: 'airPressure',
+          foo: '2.2.0',
+          tag: '2.2.0'
+        },
+        templates: { build, test, push }
       }
-      const computed = manifest.getTagMeta('2.2.0', contextMeta, globalDefaults)
+      const computed = manifest.getTagMeta('2.2.0', contextMeta)
 
       assert.deepEqual(computed, expected)
     })

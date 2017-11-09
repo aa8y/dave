@@ -14,12 +14,12 @@ rules:
     - unix
   no-console:
     - 0
-  quotes:
-    - error
-    - single
   semi:
     - error
     - never
   space-before-function-paren:
+    - error
+    - never
+  spaced-comment:
     - error
     - never
