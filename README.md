@@ -1,5 +1,8 @@
 # Dave
 
+[![Build Status](https://travis-ci.org/aa8y/dave.svg?branch=master)](https://travis-ci.org/aa8y/dave)
+[![codecov](https://codecov.io/gh/aa8y/dave/branch/master/graph/badge.svg)](https://codecov.io/gh/aa8y/dave)
+
 I've recently started authoring Docker images and I realized that the Docker Hub automation around building images is a little inadequate. There is no support for build arguments and the only way to build multiple tags is to use a different `Dockerfile` for each tag which goes against the DRY philosophy. Also, there is no way to auto-build only if the images pass certain tests.
 
 So I've decided to build **Dave**. It is an acronym for _Docker Authoring made Very Easy_. Not really. But it did come from somewhere. Here's a hint.
