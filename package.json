@@ -5,9 +5,8 @@
   "main": "index.js",
   "bin": "dave",
   "scripts": {
-    "cover": "istanbul cover _mocha test/**/*Test.js",
-    "lint": "eslint .",
-    "test": "mocha test/**/*Test.js && npm run lint"
+    "lint": "eslint index.js lib test",
+    "test": "istanbul cover _mocha test/**/*Test.js && npm run lint"
   },
   "dependencies": {
     "async": "2.5.0",
