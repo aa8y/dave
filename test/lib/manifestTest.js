@@ -8,6 +8,129 @@ const push = 'docker push {{{repository}}}:{{tag}}'
 const test = 'docker run --rm -it {{{repository}}}:{{tag}} test.sh'
 
 describe('lib/manifest', () => {
+  describe('getCommands()', () => {
+    const metadata = {
+      parameters: {
+        bar: 'metalRod',
+        repository: 'aa8y/foo'
+      },
+      templates: { push, test },
+      contexts: {
+        stable: {
+          templates: { build },
+          tags: {
+            'latest': { bar: 'airPressure' },
+            '2.2.0': { bar: 'airPressure' },
+            '1.6.1': {}
+          }
+        },
+        edge: {
+          tagKeys: ['branch'],
+          parameters: {
+            bar: 'exam',
+            baz: 'ooka'
+          },
+          templates: {
+            build: 'docker build -t {{{repository}}}:{{tag}} --build-arg BAR={{bar}} ' +
+              '--build-arg BAZ={{baz}} --build-arg BRANCH={{branch}} {{context}}'
+          },
+          tags: {
+            edge: { branch: 'master' },
+            edge2: {},
+            edge1: { bar: 'airPressure' }
+          }
+        }
+      }
+    }
+    it('returns all commands for all contexts and tags.', () => {
+      const expected = {
+        build: [
+          'docker build -t aa8y/foo:edge --build-arg BAR=exam --build-arg BAZ=ooka ' +
+            '--build-arg BRANCH=master edge',
+          'docker build -t aa8y/foo:edge1 --build-arg BAR=airPressure --build-arg BAZ=ooka ' +
+            '--build-arg BRANCH=edge1 edge',
+          'docker build -t aa8y/foo:edge2 --build-arg BAR=exam --build-arg BAZ=ooka ' +
+            '--build-arg BRANCH=edge2 edge',
+          'docker build -t aa8y/foo:1.6.1 --build-arg BAR=metalRod stable',
+          'docker build -t aa8y/foo:2.2.0 --build-arg BAR=airPressure stable',
+          'docker build -t aa8y/foo:latest --build-arg BAR=airPressure stable'
+        ],
+        test: [
+          'docker run --rm -it aa8y/foo:edge test.sh',
+          'docker run --rm -it aa8y/foo:edge1 test.sh',
+          'docker run --rm -it aa8y/foo:edge2 test.sh',
+          'docker run --rm -it aa8y/foo:1.6.1 test.sh',
+          'docker run --rm -it aa8y/foo:2.2.0 test.sh',
+          'docker run --rm -it aa8y/foo:latest test.sh'
+        ],
+        push: [
+          'docker push aa8y/foo:edge',
+          'docker push aa8y/foo:edge1',
+          'docker push aa8y/foo:edge2',
+          'docker push aa8y/foo:1.6.1',
+          'docker push aa8y/foo:2.2.0',
+          'docker push aa8y/foo:latest'
+        ]
+      }
+      const computed = manifest.getCommands(metadata)
+
+      assert.deepEqual(computed, expected)
+    })
+    it('returns specific commands for all tags of the specific context provided.', () => {
+      const expected = {
+        build: [
+          'docker build -t aa8y/foo:edge --build-arg BAR=exam --build-arg BAZ=ooka ' +
+            '--build-arg BRANCH=master edge',
+          'docker build -t aa8y/foo:edge1 --build-arg BAR=airPressure --build-arg BAZ=ooka ' +
+            '--build-arg BRANCH=edge1 edge',
+          'docker build -t aa8y/foo:edge2 --build-arg BAR=exam --build-arg BAZ=ooka ' +
+            '--build-arg BRANCH=edge2 edge'
+        ],
+      }
+      const computed = manifest.getCommands(metadata, ['build'], 'edge')
+
+      assert.deepEqual(computed, expected)
+    })
+    it('returns specific commands for all tags of all contexts when not specified.', () => {
+      const expected = {
+        test: [
+          'docker run --rm -it aa8y/foo:edge test.sh',
+          'docker run --rm -it aa8y/foo:edge1 test.sh',
+          'docker run --rm -it aa8y/foo:edge2 test.sh',
+          'docker run --rm -it aa8y/foo:1.6.1 test.sh',
+          'docker run --rm -it aa8y/foo:2.2.0 test.sh',
+          'docker run --rm -it aa8y/foo:latest test.sh'
+        ],
+        push: [
+          'docker push aa8y/foo:edge',
+          'docker push aa8y/foo:edge1',
+          'docker push aa8y/foo:edge2',
+          'docker push aa8y/foo:1.6.1',
+          'docker push aa8y/foo:2.2.0',
+          'docker push aa8y/foo:latest'
+        ]
+      }
+      const computed = manifest.getCommands(metadata, ['test', 'push'])
+
+      assert.deepEqual(computed, expected)
+    })
+    it('returns specific commands for the specific context and tags when provided.', () => {
+      const expected = {
+        build: [
+          'docker build -t aa8y/foo:1.6.1 --build-arg BAR=metalRod stable',
+          'docker build -t aa8y/foo:latest --build-arg BAR=airPressure stable'
+        ],
+        push: [
+          'docker push aa8y/foo:1.6.1',
+          'docker push aa8y/foo:latest'
+        ]
+      }
+      const computed = 
+        manifest.getCommands(metadata, ['build', 'push'], 'stable', ['1.6.1', 'latest'])
+
+      assert.deepEqual(computed, expected)
+    })
+  })
   describe('getContextCommands()', () => {
     const contextMeta = {
       tagKeys: ['foo'],
@@ -46,13 +169,58 @@ describe('lib/manifest', () => {
 
       assert.deepEqual(computed, expected)
     })
+    it('returns all commands for specific tags in the context when provided.', () => {
+      const expected = {
+        build: [
+          'docker build -t aa8y/foo:1.6.1 --build-arg BAR=exam stable',
+          'docker build -t aa8y/foo:latest --build-arg BAR=airPressure stable'
+        ],
+        test: [
+          'docker run --rm -it aa8y/foo:1.6.1 test.sh',
+          'docker run --rm -it aa8y/foo:latest test.sh'
+        ],
+        push: [
+          'docker push aa8y/foo:1.6.1',
+          'docker push aa8y/foo:latest'
+        ]
+      }
+      const computed = manifest.getContextCommands(contextMeta, [], ['1.6.1', 'latest'])
+
+      assert.deepEqual(computed, expected)
+    })
+    it('returns specific commands for all tags in the context when provided.', () => {
+      const expected = {
+        test: [
+          'docker run --rm -it aa8y/foo:1.6.1 test.sh',
+          'docker run --rm -it aa8y/foo:2.2.0 test.sh',
+          'docker run --rm -it aa8y/foo:latest test.sh'
+        ],
+        push: [
+          'docker push aa8y/foo:1.6.1',
+          'docker push aa8y/foo:2.2.0',
+          'docker push aa8y/foo:latest'
+        ]
+      }
+      const computed = manifest.getContextCommands(contextMeta, ['test', 'push'])
+
+      assert.deepEqual(computed, expected)
+    })
+    it('returns specific commands for specific tags in the context when provided.', () => {
+      const expected = {
+        build: [
+          'docker build -t aa8y/foo:1.6.1 --build-arg BAR=exam stable',
+          'docker build -t aa8y/foo:latest --build-arg BAR=airPressure stable'
+        ]
+      }
+      const computed = manifest.getContextCommands(contextMeta, ['build'], ['1.6.1', 'latest'])
+
+      assert.deepEqual(computed, expected)
+    })
   })
   describe('getContextMeta()', () => {
     const metadata = {
-      defaults: {
-        parameters: { bar: 'metalRod' },
-        templates: { push }
-      },
+      parameters: { bar: 'metalRod' },
+      templates: { push },
       contexts: {
         edge: {
           templates: { test }
@@ -75,13 +243,17 @@ describe('lib/manifest', () => {
     })
     it('returns the context-specific metadata when present.', () => {
       const expected1 = {
-        context: 'edge',
-        parameters: { bar: 'metalRod' },
+        parameters: {
+          context: 'edge',
+          bar: 'metalRod'
+        },
         templates: { test, push }
       }
       const expected2 = {
-        context: 'stable',
-        parameters: { bar: 'exam' },
+        parameters: {
+          context: 'stable',
+          bar: 'exam'
+        },
         templates: { push }
       }
       const computed1 = manifest.getContextMeta('edge', metadata)
@@ -128,19 +300,19 @@ describe('lib/manifest', () => {
   })
   describe('getGlobalDefaults()', () => {
     it('should return defaults defined in the root, when present.', () => {
-      const defaults = {
+      const metadata = {
         parameters: { repository },
         templates: { push }
       }
-      const metadata = { defaults }
       const computed = manifest.getGlobalDefaults(metadata)
 
-      assert.deepEqual(computed, defaults)
+      assert.deepEqual(computed, metadata)
     })
     it('should return empty object when no defaults are defined.', () => {
+      const expected = { parameters: {}, templates: {} }
       const computed = manifest.getGlobalDefaults({})
 
-      assert.deepEqual(computed, {})
+      assert.deepEqual(computed, expected)
     })
   })
   describe('getTagCommands()', () => {
