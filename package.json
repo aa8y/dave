@@ -2,7 +2,7 @@
   "name": "dave",
   "version": "0.1.0-SNAPSHOT",
   "description": "A helper to build, test and push Docker images and template Dockerfiles.",
-  "main": "index.js",
+  "main": "dave.js",
   "bin": "dave",
   "scripts": {
     "lint": "eslint index.js lib test",
