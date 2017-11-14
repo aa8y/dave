@@ -22,4 +22,4 @@ rules:
     - never
   spaced-comment:
     - error
-    - never
+    - always

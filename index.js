@@ -36,7 +36,10 @@ function main() {
   const opts = yargs.options()
 
   manifest.getMetadata((err, metadata) => {
-    if (err) return cb(err)
+    if (err) {
+      console.error('Could not read metadata from the manifest.')
+      process.exit(1)
+    }
     const commands = manifest.getCommands(metadata, cmds, opts.context, opts.tags)
     async.each(commands, runCommand.bind(null), (err) => {
       if (err) process.exit(1)
