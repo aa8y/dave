@@ -1,19 +1,11 @@
+#!/usr/bin/env node
+
 const async = require('async')
 const manifest = require('./lib/manifest')
 const yargs = require('./lib/yargs')
 
 const { exec } = require('child_process')
 
-function run(command, cb) {
-  exec(command, (err, stdout, stderr) => {
-    if (err) {
-      console.log(stderr)
-      return cb(err)
-    }
-    console.log(stdout)
-    cb(null, stdout)
-  })
-}
 function main(cb) {
   const cmds = yargs.commands()
   const opts = yargs.options()
@@ -21,16 +13,22 @@ function main(cb) {
   manifest.getMetadata((err, metadata) => {
     if (err) return cb(err)
     const commands = manifest.getCommands(metadata, cmds, opts.context, opts.tags)
-    async.map(commands, run.bind(null), (err) => {
-      if (err) throw err
+    async.map(commands, (command, cb) => {
+      console.log(`Running: ${command}`)
+      exec(command, cb)
+    }, (err, stdout, stderr) => {
+      if (err) return cb(err)
+      cb(null, stdout, stderr)
     })
   })
 }
 
-main((err) => {
+main((err, stdout, stderr) => {
   if (err) {
-    console.error(err.message)
+    if (stderr) console.error(stderr)
+    console.log(err.message)
     process.exit(1)
   }
+  console.log(stdout.pop())
   process.exit(0)
 })
