@@ -7,7 +7,10 @@ const yargs = require('./lib/yargs')
 const { spawn } = require('child_process')
 
 function splitCommand(command) {
-  const split = command.split(' ')
+  const trimmed = command.trim()
+  if (trimmed === '') throw new Error('Command cannot be an empty string.')
+
+  const split = trimmed.split(' ').filter((s) => s !== '')
   const cmd = split.slice(0, 1).pop()
   const args = split.slice(1)
 
@@ -28,7 +31,7 @@ function runCommand(command, cb) {
   })
   run.on('close', (code) => {
     if (code != 0) console.error(`Failed: ${command}`)
-    cb(err)
+    cb(err, code)
   })
 }
 function main() {

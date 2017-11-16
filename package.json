@@ -6,20 +6,20 @@
   "bin": "dave",
   "scripts": {
     "lint": "eslint index.js lib test",
-    "test": "istanbul cover _mocha test/**/*Test.js && npm run lint"
+    "test": "istanbul cover _mocha test/*Test.js test/**/*Test.js && npm run lint"
   },
   "dependencies": {
-    "async": "2.5.0",
-    "js-yaml": "3.10.0",
-    "lodash": "4.17.4",
-    "mustache": "2.3.0",
-    "yargs": "10.0.3"
+    "async": "^2.5.0",
+    "js-yaml": "^3.10.0",
+    "lodash": "^4.17.4",
+    "mustache": "^2.3.0",
+    "yargs": "^10.0.3"
   },
   "devDependencies": {
-    "chai": "4.1.2",
-    "eslint": "4.10.0",
-    "istanbul": "0.4.5",
-    "mocha": "4.0.1"
+    "chai": "^4.1.2",
+    "eslint": "^4.10.0",
+    "istanbul": "^0.4.5",
+    "mocha": "^4.0.1"
   },
   "repository": {
     "type": "git",
