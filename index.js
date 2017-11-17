@@ -49,7 +49,7 @@ function main(args, cb) {
       if (err) return cb(err, 'Could not read metadata from the manifest.')
       const commands = manifest.getCommands(metadata, cmds, opts.context, opts.tags)
 
-      async.each(commands, runCommand, (err) => {
+      async.eachLimit(commands, 1, runCommand, (err) => {
         if (err) return cb(err, 'Commands could not be executed successfully.')
         cb(null, 'All commands completed successfully.')
       })
