@@ -23,7 +23,8 @@ describe('index', () => {
     })
     it('returns code 1 for an unsuccessful command.', (done) => {
       index.runCommand('false', (err, res) => {
-        assert.isNull(err)
+        assert.isNotNull(err)
+        assert.equal(err.message, `'false' failed with exit code 1.`)
         assert.equal(res, 1)
         done()
       })

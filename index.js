@@ -20,18 +20,19 @@ function runCommand(command, cb) {
   console.log(`Running: ${command}`)
   const { cmd, args } = splitCommand(command)
   const run = spawn(cmd, args)
-  let err = null
 
   run.stdout.on('data', (data) => {
     console.log(data.toString().trim())
   })
   run.stderr.on('data', (data) => {
     console.error(data.toString().trim())
-    err = data
   })
   run.on('close', (code) => {
-    if (code != 0) console.error(`Failed: ${command}`)
-    cb(err, code)
+    if (code != 0) {
+      const err = new Error(`'${command}' failed with exit code ${code}.`)
+      return cb(err, code)
+    }
+    cb(null, code)
   })
 }
 function main(args, cb) {
@@ -48,7 +49,7 @@ function main(args, cb) {
       if (err) return cb(err, 'Could not read metadata from the manifest.')
       const commands = manifest.getCommands(metadata, cmds, opts.context, opts.tags)
 
-      async.each(commands, runCommand.bind(null), (err) => {
+      async.each(commands, runCommand, (err) => {
         if (err) return cb(err, 'Commands could not be executed successfully.')
         cb(null, 'All commands completed successfully.')
       })
