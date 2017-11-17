@@ -1,0 +1,12 @@
+parameters:
+  greeting: Hello
+templates:
+  build: echo {{greeting}} world
+contexts:
+  .:
+    tags:
+      begin:
+      end:
+        greeting: Goodbye
+      wait:
+        greeting: Stop

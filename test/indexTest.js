@@ -3,20 +3,29 @@ const index = require('../index')
 const { assert } = require('chai')
 
 describe('index', () => {
+  describe('main()', () => {
+    it('should parse arguments and use the manifest to run commands.', (done) => {
+      index.main('build --context . --tags begin end --manifest ./test/manifest.yml', (err, msg) => {
+        assert.isNull(err)
+        assert.equal(msg, 'All commands completed successfully.')
+        done()
+      })
+    })
+  })
   // TODO: Use sinon to stub out console.log for runCommand() tests.
   describe('runCommand()', () => {
     it('returns code 0 for a successful command.', (done) => {
       index.runCommand('true', (err, res) => {
         assert.isNull(err)
         assert.equal(res, 0)
-        done(err)
+        done()
       })
     })
     it('returns code 1 for an unsuccessful command.', (done) => {
       index.runCommand('false', (err, res) => {
         assert.isNull(err)
         assert.equal(res, 1)
-        done(err)
+        done()
       })
     })
   })
