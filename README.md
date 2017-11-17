@@ -16,7 +16,7 @@ Dave is a tool which is intended to help with Docker image authoring. It tries t
 
 ### Features
 
-Dave would do perform its operations by using metadata in a [YAML](http://yaml.org/) serialized manifest file. The format is explained [later](#manifest_file_format). The following operations are supported.
+Dave would do perform its operations by using metadata in a [YAML](http://yaml.org/) serialized manifest file. The format is explained [later](#manifest_file). The following operations are supported.
 
 * **pull**: Pulls one or more images from a Docker registry like Docker Hub.
 * **build**: Builds one or more images using the given Docker build command template and its arguments.
@@ -26,7 +26,7 @@ Dave would do perform its operations by using metadata in a [YAML](http://yaml.o
 
 All templating is done using [Mustache](https://mustache.github.io/). `pull` and `template` commands won't be supported in the first release which would be `0.1.0`.
 
-### Manifest File Format
+### Manifest File
 
 The manifest file follows a trickle down format. What this means that all the values in the parent node trickle down but can be overridden by the child node. Here's a sample format.
 
