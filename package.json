@@ -1,9 +1,11 @@
 {
   "name": "dave",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A helper to build, test and push Docker images and template Dockerfiles.",
   "main": "index.js",
-  "bin": "dave",
+  "bin": {
+    "dave": "./index.js"
+  },
   "scripts": {
     "lint": "eslint index.js lib test",
     "test": "istanbul cover _mocha test/*Test.js test/**/*Test.js && npm run lint"
