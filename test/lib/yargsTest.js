@@ -75,7 +75,7 @@ describe('lib/yargs', () => {
       yargs.argv('build --context . --tags 1.0.2 1.0.3', (err, argv) => {
         assert.isNull(err)
 
-        const expected = { 
+        const expected = {
           context: '.',
           manifest,
           tags: ['1.0.2', '1.0.3']
@@ -88,7 +88,7 @@ describe('lib/yargs', () => {
       yargs.argv('build --context . --tags 1.0 1', (err, argv) => {
         assert.isNull(err)
 
-        const expected = { 
+        const expected = {
           context: '.',
           manifest,
           tags: ['1.0', '1']
@@ -97,11 +97,15 @@ describe('lib/yargs', () => {
         assert.deepEqual(computed, expected)
       })
     })
-    it('returns an object with default manifest if tags are passed but no context is.', () => {
+    it(`returns an object with default context '.' if tags are passed but no context is.`, () => {
       yargs.argv('build --tags 1.0 1', (err, argv) => {
         assert.isNull(err)
 
-        const expected = { manifest }
+        const expected = {
+          context: '.',
+          manifest,
+          tags: ['1.0', '1']
+        }
         const computed = yargs.options(argv)
         assert.deepEqual(computed, expected)
       })
