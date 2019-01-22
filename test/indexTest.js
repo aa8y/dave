@@ -14,56 +14,42 @@ describe('index', () => {
     })
   })
   describe('runCommand()', () => {
-    it('returns code 0 for a successful command.', (done) => {
-      index.runCommand('true', (err, res) => {
+    it('is able to run commands without arguments.', (done) => {
+      index.runCommand('true', (err) => {
         assert.isNull(err)
-        assert.equal(res, 0)
         done()
       })
     })
-    it('returns code 1 for an unsuccessful command.', (done) => {
-      index.runCommand('false', (err, res) => {
+    it('can fail running a command.', (done) => {
+      index.runCommand('false', (err) => {
         assert.isNotNull(err)
-        assert.equal(err.message, `'false' failed with exit code 1.`)
-        assert.equal(res, 1)
+        assert.equal(err.message.trim(), 'Command failed: false')
         done()
       })
     })
-  })
-  describe('splitCommand()', () => {
-    it('splits the command string into command and arguments.', () => {
-      const command = 'ls -l /bin'
-      const expected = { cmd: 'ls', args: ['-l', '/bin'] }
-      const computed = index.splitCommand(command)
-
-      assert.deepEqual(computed, expected)
+    it('is able to run commands with arguments.', (done) => {
+      index.runCommand('ls -l /tmp', (err) => {
+        assert.isNull(err)
+        done()
+      })
     })
-    it('an empty argument list if none are present.', () => {
-      const command = 'ls'
-      const expected = { cmd: 'ls', args: [] }
-      const computed = index.splitCommand(command)
-
-      assert.deepEqual(computed, expected)
+    it('is able to run chained commands.', (done) => {
+      index.runCommand('true && ls', (err) => {
+        assert.isNull(err)
+        done()
+      })
     })
-    it('should not have empty strings in args.', () => {
-      const command = 'ls  -l  /bin '
-      const expected = { cmd: 'ls', args: ['-l', '/bin'] }
-      const computed = index.splitCommand(command)
-
-      assert.deepEqual(computed, expected)
+    it('is able to run piped commands.', (done) => {
+      index.runCommand('ls -lrt /bin | tail', (err) => {
+        assert.isNull(err)
+        done()
+      })
     })
-    it('should not have an empty string for the cmd.', () => {
-      const command = '  ls -l /bin'
-      const expected = { cmd: 'ls', args: ['-l', '/bin'] }
-      const computed = index.splitCommand(command)
-
-      assert.deepEqual(computed, expected)
-    })
-    it('should throw an exception if passed an empty string for a command.', () => {
-      const error = 'Command cannot be an empty string.'
-
-      assert.throws(() => index.splitCommand(''), Error, error)
-      assert.throws(() => index.splitCommand(' '), Error, error)
+    it('is able to run commands with special characters.', (done) => {
+      index.runCommand('ls -l /bin/ch*', (err) => {
+        assert.isNull(err)
+        done()
+      })
     })
   })
 })

@@ -4,35 +4,14 @@ const async = require('async')
 const manifest = require('./lib/manifest')
 const yargs = require('./lib/yargs')
 
-const { spawn } = require('child_process')
+const { exec } = require('child_process')
 
-function splitCommand(command) {
-  const trimmed = command.trim()
-  if (trimmed === '') throw new Error('Command cannot be an empty string.')
-
-  const split = trimmed.split(' ').filter((s) => s !== '')
-  const cmd = split.slice(0, 1).pop()
-  const args = split.slice(1)
-
-  return { cmd, args }
-}
 function runCommand(command, cb) {
   console.log(`Running: ${command}`)
-  const { cmd, args } = splitCommand(command)
-  const run = spawn(cmd, args)
-
-  run.stdout.on('data', (data) => {
-    console.log(data.toString().trim())
-  })
-  run.stderr.on('data', (data) => {
-    console.error(data.toString().trim())
-  })
-  run.on('close', (code) => {
-    if (code != 0) {
-      const err = new Error(`'${command}' failed with exit code ${code}.`)
-      return cb(err, code)
-    }
-    cb(null, code)
+  exec(command, (err, stdout, stderr) => {
+    console.log(stdout)
+    console.error(stderr)
+    cb(err)
   })
 }
 function main(args, cb) {
@@ -59,8 +38,7 @@ function main(args, cb) {
 
 module.exports = {
   main,
-  runCommand,
-  splitCommand
+  runCommand
 }
 
 // Enable script-like invocation.
