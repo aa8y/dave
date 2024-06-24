@@ -1,2 +1,7 @@
+# IntelliJ IDEA
+*.iml
+.idea/
+
+# Node.js
 coverage/
 node_modules/
