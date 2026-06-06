@@ -45,7 +45,7 @@ Each task below is one commit. Commit subject in backticks. Tick the box once co
   - Mocha needs no config change; `.mjs`/`.js` ESM works.
   - **Reordered before yargs**: yargs 18 is ESM-only, so it can't be `require()`'d. ESM must land first.
 
-- [ ] **7. `chore(deps): upgrade yargs 13 → 18`**
+- [x] **7. `chore(deps): upgrade yargs 13 → 18`**
   - Update `lib/yargs.js` for the v18 API (factory `yargs()`, `parseAsync`).
 
 - [ ] **8. `chore(deps): upgrade chai 4 → 6`**

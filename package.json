@@ -15,7 +15,7 @@
     "js-yaml": "^4.2.0",
     "lodash": "^4.18.1",
     "mustache": "^4.2.0",
-    "yargs": "^13.3.2"
+    "yargs": "^18.0.0"
   },
   "devDependencies": {
     "c8": "^10.1.3",
