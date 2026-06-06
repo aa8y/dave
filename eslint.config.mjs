@@ -19,8 +19,8 @@ export default [...compat.extends("eslint:recommended"), {
             ...globals.node,
         },
 
-        ecmaVersion: 6,
-        sourceType: "commonjs",
+        ecmaVersion: "latest",
+        sourceType: "module",
     },
 
     rules: {
@@ -28,7 +28,11 @@ export default [...compat.extends("eslint:recommended"), {
         "linebreak-style": ["error", "unix"],
         "no-console": [0],
         semi: ["error", "never"],
-        "space-before-function-paren": ["error", "never"],
+        "space-before-function-paren": ["error", {
+            anonymous: "never",
+            named: "never",
+            asyncArrow: "always",
+        }],
         "spaced-comment": ["error", "always"],
     },
 }];

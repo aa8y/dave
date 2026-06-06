@@ -1,6 +1,5 @@
-const manifest = require('../../lib/manifest')
-
-const { assert } = require('chai')
+import { assert } from 'chai'
+import * as manifest from '../../lib/manifest.js'
 
 const repository = 'aa8y/foo'
 const build = 'docker build -t {{{repository}}}:{{tag}} --build-arg BAR={{bar}} {{context}}'
@@ -425,6 +424,28 @@ describe('lib/manifest', () => {
       const computed = manifest.getTags(contextMeta)
 
       assert.deepEqual(computed, expected)
+    })
+  })
+  describe('getMetadata()', () => {
+    it('loads and parses the manifest at the given path.', async () => {
+      const metadata = await manifest.getMetadata('./test/manifest.yml')
+      assert.equal(metadata.parameters.greeting, 'Hello')
+    })
+    it('rejects when the manifest file does not exist.', async () => {
+      try {
+        await manifest.getMetadata('./test/does-not-exist.yml')
+        assert.fail('expected rejection')
+      } catch (err) {
+        assert.equal(err.code, 'ENOENT')
+      }
+    })
+    it('rejects when the YAML is malformed.', async () => {
+      try {
+        await manifest.getMetadata('./test/malformed.yml')
+        assert.fail('expected rejection')
+      } catch (err) {
+        assert.equal(err.name, 'YAMLException')
+      }
     })
   })
 })

@@ -1,53 +1,41 @@
 #!/usr/bin/env node
 
-const async = require('async')
-const manifest = require('./lib/manifest')
-const yargs = require('./lib/yargs')
+import { promisify } from 'node:util'
+import { exec as execCb } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 
-const { exec } = require('child_process')
+import * as manifest from './lib/manifest.js'
+import * as yargs from './lib/yargs.js'
 
-function runCommand(command, cb) {
+const exec = promisify(execCb)
+
+export async function runCommand(command) {
   console.log(`Running: ${command}`)
-  exec(command, (err, stdout, stderr) => {
-    console.log(stdout)
-    console.error(stderr)
-    cb(err)
-  })
+  const { stdout, stderr } = await exec(command)
+  console.log(stdout)
+  console.error(stderr)
 }
-function main(args, cb) {
-  if (typeof args === 'function') {
-    cb = args
-    args = process.argv.slice(2)
+
+export async function main(args = process.argv.slice(2)) {
+  const argv = await yargs.argv(args)
+  const cmds = yargs.commands(argv)
+  const opts = yargs.options(argv)
+
+  const metadata = await manifest.getMetadata(opts.manifest)
+  const commands = manifest.getCommands(metadata, cmds, opts.context, opts.tags)
+
+  for (const command of commands) {
+    await runCommand(command)
   }
-  yargs.argv(args, (err, argv) => {
-    if (err) return cb(err, 'Command-line arguments could not be parsed.')
-    const cmds = yargs.commands(argv)
-    const opts = yargs.options(argv)
-
-    manifest.getMetadata(opts.manifest, (err, metadata) => {
-      if (err) return cb(err, 'Could not read metadata from the manifest.')
-      const commands = manifest.getCommands(metadata, cmds, opts.context, opts.tags)
-
-      async.eachLimit(commands, 1, runCommand, (err) => {
-        if (err) return cb(err, 'Commands could not be executed successfully.')
-        cb(null, 'All commands completed successfully.')
-      })
-    })
-  })
+  return 'All commands completed successfully.'
 }
 
-module.exports = {
-  main,
-  runCommand
-}
-
-// Enable script-like invocation.
-if (module === require.main) {
-  module.exports.main((err, msg) => {
-    if (err) {
-      console.log(`${msg} ${err.message}`)
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().then(
+    (msg) => console.log(msg),
+    (err) => {
+      console.error(err.message)
       process.exit(1)
     }
-    console.log(msg)
-  })
+  )
 }
