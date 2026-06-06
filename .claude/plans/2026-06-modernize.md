@@ -23,7 +23,7 @@ Each task below is one commit. Commit subject in backticks. Tick the box once co
   - Delete `.travis.yml`.
   - Replace Travis build badge in README with GHA badge.
 
-- [ ] **3. `chore: drop legacy eslint config and bump .nvmrc`**
+- [x] **3. `chore: drop legacy eslint config and bump .nvmrc`**
   - Delete `.eslintrc.yml` (eslint 9 uses flat config exclusively).
   - Set `.nvmrc` to current Node LTS.
 
