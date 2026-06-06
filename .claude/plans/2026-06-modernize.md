@@ -30,7 +30,7 @@ Each task below is one commit. Commit subject in backticks. Tick the box once co
 - [x] **4. `chore(deps): patch/minor bumps within current majors`**
   - Bump `async`, `js-yaml`, `lodash`, `mocha`, `eslint` to latest within their current major before tackling cross-major migrations.
 
-- [ ] **5. `refactor!: promise-based API; drop async package`**
+- [x] **5. `refactor!: promise-based API; drop async package`**
   - `lib/manifest.js`: `getMetadata` uses `fs/promises`; helpers stay sync.
   - `lib/yargs.js`: parse via `yargs.parseAsync`.
   - `index.js`: `main()` and `runCommand()` return promises; bin uses top-level await.
