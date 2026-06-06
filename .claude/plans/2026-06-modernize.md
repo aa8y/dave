@@ -52,7 +52,7 @@ Each task below is one commit. Commit subject in backticks. Tick the box once co
   - chai 5+ is ESM-only — task 7 unblocks this.
   - Update import + any drift in assertion syntax.
 
-- [ ] **9. `refactor: replace lodash with focused deep-merge helper`**
+- [x] **9. `refactor: replace lodash with focused deep-merge helper`**
   - Lodash is only used for `_.merge`. Swap in the `deepmerge` package (tiny, no transitive deps) or a hand-rolled merge. Drop full lodash dep.
 
 - [ ] **10. `chore(deps): clear residual audit findings`**
