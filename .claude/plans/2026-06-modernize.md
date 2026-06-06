@@ -48,7 +48,7 @@ Each task below is one commit. Commit subject in backticks. Tick the box once co
 - [x] **7. `chore(deps): upgrade yargs 13 → 18`**
   - Update `lib/yargs.js` for the v18 API (factory `yargs()`, `parseAsync`).
 
-- [ ] **8. `chore(deps): upgrade chai 4 → 6`**
+- [x] **8. `chore(deps): upgrade chai 4 → 6`**
   - chai 5+ is ESM-only — task 7 unblocks this.
   - Update import + any drift in assertion syntax.
 
