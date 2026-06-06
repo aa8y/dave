@@ -67,7 +67,7 @@ Each task below is one commit. Commit subject in backticks. Tick the box once co
     - `runCommand` rejection surfacing through `main()`.
   - Keep it tight — one assertion per behaviour.
 
-- [ ] **12. `chore: bump version to 0.3.0; update README`**
+- [x] **12. `chore: bump version to 0.3.0; update README`**
   - Bump `package.json` to `0.3.0`.
   - Update README: remove the "pull/template not in 0.1.0" note (they're still not implemented; the framing is stale), refresh CI section, swap Travis badge.
   - Final `npm audit` and `npm test` confirmation.

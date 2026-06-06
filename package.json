@@ -1,6 +1,6 @@
 {
   "name": "dave",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "A helper to build, test and push Docker images and template Dockerfiles.",
   "type": "module",
   "main": "index.js",

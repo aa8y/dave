@@ -16,16 +16,14 @@ Dave is a tool which is intended to help with Docker image authoring. It tries t
 
 ## Features
 
-Dave would do perform its operations by using metadata in a [YAML](http://yaml.org/) serialized manifest file. The format is explained [later](#manifest_file). The following operations are supported.
+Dave performs its operations by using metadata in a [YAML](http://yaml.org/) serialized manifest file. The format is explained [later](#manifest-file). The following operations are supported.
 
-* **all**: This command will execute all commands except `template` in the order of `pull`, `build`, `test` and `push`.
+* **all**: Executes `build`, `test` and `push` in order.
 * **build**: Builds one or more images using the given Docker build command template and its arguments.
-* **pull**: Pulls one or more images from a Docker registry like Docker Hub.
 * **push**: Pushes a local image using the given Docker push command template and its arguments.
-* **template**: Builds one or more `Dockerfile`s using the given template. This helps keep your `Dockerfile`s DRY.
 * **test**: Tests a Docker image by invoking a certain command on the image. A non-zero exit status code fails the test.
 
-All templating is done using [Mustache](https://mustache.github.io/). `pull` and `template` commands won't be supported in the first release which would be `0.1.0`.
+All templating is done using [Mustache](https://mustache.github.io/).
 
 ## Usage
 
@@ -172,42 +170,46 @@ And while the manifest file can be named anything, the default name assumed is `
 
 ## Examples
 
-Here are projects where Dave is being utilized to build, test and push images. See `manifest.yml` to see how the metadata has been stored and `.travis.yml` to see how Dave can be leveraged.
+Here are projects where Dave is being utilized to build, test and push images. See `manifest.yml` to see how the metadata has been stored.
 
 * [aa8y/docker-scala](https://github.com/aa8y/docker-scala): A simple Docker project with one `Dockerfile` (i.e. one context) from which all Docker images are built.
 
 ## CI Builds
 
-### TravisCI
+### GitHub Actions
 
-Here's an example `.travis.yml` to use it with TravisCI.
+Here's an example workflow to use Dave with GitHub Actions:
 
+```yaml
+name: Docker images
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install -g dave
+      - run: dave build
+      - run: dave test
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - run: dave push
 ```
-sudo: required
-services:
-  - docker
-language: node_js
-node_js:
-  - stable
-before_install:
-  - git clone https://github.com/aa8y/dave.git
-install:
-  - npm install -g dave/
-before_script:
-  - dave build
-script:
-  - dave test
-after_success:
-  - docker login -u <username> -p "$DOCKER_PASSWORD"
-  - dave push
-```
 
-If all you want to do is build and test the images, you can ignore the `after_success` section. But if you do want to push the images after they have been tested, you would need a way to authenticate your Docker user. For that, follow [this guide](https://docs.travis-ci.com/user/docker/#Pushing-a-Docker-Image-to-a-Registry). I, personally, only like to encrypt my password as the username for Docker registry is usually also the namespace for the images. Also, I am working on acquiring the [Dave package namespace](https://www.npmjs.com/package/dave) on NPM, so that the installation process is easier.
+Drop the login and `dave push` steps if you only want to build and test.
 
 ## Future Work
 
-* Add support to pull images. This should help pulling cached layers which can make building images faster on a CI instance. I expect to add this in the 0.2.0 release.
-* Add support for templating `Dockerfile`s. I expect to add this in the 0.3.0 release.
 * Verify the metadata read from the manifest against a schema. Maybe use [JSON Schema](http://json-schema.org/)?
 
 ## License
