@@ -26,7 +26,7 @@ npm run lint            # eslint only
 ./index.js build --context . --tags foo --manifest ./test/manifest.yml
 ```
 
-The `npm test` script uses the legacy `istanbul` package, not nyc.
+`npm test` runs `c8 mocha 'test/**/*Test.js' && npm run lint`.
 
 ## Test layout
 

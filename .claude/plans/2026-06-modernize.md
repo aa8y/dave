@@ -13,7 +13,7 @@ Each task below is one commit. Commit subject in backticks. Tick the box once co
 
 ---
 
-- [ ] **1. `chore(test): replace istanbul with c8 coverage runner`**
+- [x] **1. `chore(test): replace istanbul with c8 coverage runner`**
   - Add `c8` devDep, remove `istanbul`.
   - `npm test` becomes `c8 mocha 'test/**/*Test.js' && npm run lint`.
   - Baseline reason: istanbul's CJS hook breaks on Node ≥ 22 because mocha's bundled yargs is now ESM. Nothing else can be verified until this lands.
