@@ -1,0 +1,6 @@
+parameters:
+  greeting: Hello
+contexts:
+  .:
+    tags:
+      begin: [unclosed

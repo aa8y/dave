@@ -60,7 +60,7 @@ Each task below is one commit. Commit subject in backticks. Tick the box once co
   - Run `npm audit fix` (and `--force` if a remaining advisory needs it) for whatever's left.
   - Document any unresolvable findings in the commit message.
 
-- [ ] **11. `test: cover error paths in main(), manifest read, runCommand failure`**
+- [x] **11. `test: cover error paths in main(), manifest read, runCommand failure`**
   - Add focused tests for the currently-uncovered branches:
     - `main()` when the manifest path is missing.
     - `getMetadata()` when YAML is malformed.

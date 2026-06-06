@@ -7,6 +7,14 @@ describe('index', () => {
       const msg = await index.main('build --context . --tags begin end --manifest ./test/manifest.yml')
       assert.equal(msg, 'All commands completed successfully.')
     })
+    it('rejects when the manifest cannot be read.', async () => {
+      try {
+        await index.main('build --manifest ./test/does-not-exist.yml')
+        assert.fail('expected rejection')
+      } catch (err) {
+        assert.equal(err.code, 'ENOENT')
+      }
+    })
   })
   describe('runCommand()', () => {
     it('is able to run commands without arguments.', async () => {
