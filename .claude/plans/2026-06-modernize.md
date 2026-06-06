@@ -27,7 +27,7 @@ Each task below is one commit. Commit subject in backticks. Tick the box once co
   - Delete `.eslintrc.yml` (eslint 9 uses flat config exclusively).
   - Set `.nvmrc` to current Node LTS.
 
-- [ ] **4. `chore(deps): patch/minor bumps within current majors`**
+- [x] **4. `chore(deps): patch/minor bumps within current majors`**
   - Bump `async`, `js-yaml`, `lodash`, `mocha`, `eslint` to latest within their current major before tackling cross-major migrations.
 
 - [ ] **5. `refactor!: promise-based API; drop async package`**
