@@ -8,7 +8,7 @@
   },
   "scripts": {
     "lint": "eslint index.js lib test",
-    "test": "c8 mocha 'test/**/*Test.js' && npm run lint"
+    "test": "c8 --reporter=text --reporter=lcov mocha 'test/**/*Test.js' && npm run lint"
   },
   "dependencies": {
     "async": "^3.2.5",

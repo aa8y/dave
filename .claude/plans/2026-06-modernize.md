@@ -18,7 +18,7 @@ Each task below is one commit. Commit subject in backticks. Tick the box once co
   - `npm test` becomes `c8 mocha 'test/**/*Test.js' && npm run lint`.
   - Baseline reason: istanbul's CJS hook breaks on Node ≥ 22 because mocha's bundled yargs is now ESM. Nothing else can be verified until this lands.
 
-- [ ] **2. `chore(ci): switch from Travis to GitHub Actions`**
+- [x] **2. `chore(ci): switch from Travis to GitHub Actions`**
   - Add `.github/workflows/ci.yml` (matrix on current Node LTSes, runs `npm ci && npm test`).
   - Delete `.travis.yml`.
   - Replace Travis build badge in README with GHA badge.

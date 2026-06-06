@@ -1,6 +1,6 @@
 # Dave
 
-[![Build Status](https://travis-ci.org/aa8y/dave.svg?branch=master)](https://travis-ci.org/aa8y/dave)
+[![CI](https://github.com/aa8y/dave/actions/workflows/ci.yml/badge.svg)](https://github.com/aa8y/dave/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/aa8y/dave/branch/master/graph/badge.svg)](https://codecov.io/gh/aa8y/dave)
 
 Dave is a tool which is intended to help with Docker image authoring. It tries to fill the gaps Docker Hub has around building images, which are:
