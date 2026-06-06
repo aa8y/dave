@@ -55,7 +55,7 @@ Each task below is one commit. Commit subject in backticks. Tick the box once co
 - [x] **9. `refactor: replace lodash with focused deep-merge helper`**
   - Lodash is only used for `_.merge`. Swap in the `deepmerge` package (tiny, no transitive deps) or a hand-rolled merge. Drop full lodash dep.
 
-- [ ] **10. `chore(deps): clear residual audit findings`**
+- [x] **10. `chore(deps): clear residual audit findings`**
   - At this point most vulns will already be gone (most came from istanbul + outdated direct deps).
   - Run `npm audit fix` (and `--force` if a remaining advisory needs it) for whatever's left.
   - Document any unresolvable findings in the commit message.

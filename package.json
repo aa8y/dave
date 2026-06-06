@@ -22,6 +22,9 @@
     "eslint": "^9.39.4",
     "mocha": "^10.8.2"
   },
+  "overrides": {
+    "serialize-javascript": "^7.0.5"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/aa8y/dave.git"
