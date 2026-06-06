@@ -1,6 +1,5 @@
-const yargs = require('../../lib/yargs')
-
-const { assert } = require('chai')
+import { assert } from 'chai'
+import * as yargs from '../../lib/yargs.js'
 
 describe('lib/yargs', () => {
   describe('commands()', () => {

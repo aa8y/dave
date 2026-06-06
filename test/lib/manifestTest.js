@@ -1,6 +1,5 @@
-const manifest = require('../../lib/manifest')
-
-const { assert } = require('chai')
+import { assert } from 'chai'
+import * as manifest from '../../lib/manifest.js'
 
 const repository = 'aa8y/foo'
 const build = 'docker build -t {{{repository}}}:{{tag}} --build-arg BAR={{bar}} {{context}}'

@@ -38,14 +38,15 @@ Each task below is one commit. Commit subject in backticks. Tick the box once co
   - Tests rewritten to async/await.
   - Public API change is intentional (pre-1.0).
 
-- [ ] **6. `chore(deps): upgrade yargs 13 → 18`**
-  - Update `lib/yargs.js` for the v18 API (factory `yargs()`, `parseAsync`).
-
-- [ ] **7. `refactor!: migrate to ESM modules`**
+- [x] **6. `refactor!: migrate to ESM modules`**
   - `package.json` gets `"type": "module"`.
   - All `.js` files become `import`/`export`.
   - `eslint.config.mjs` sourceType → `module`.
   - Mocha needs no config change; `.mjs`/`.js` ESM works.
+  - **Reordered before yargs**: yargs 18 is ESM-only, so it can't be `require()`'d. ESM must land first.
+
+- [ ] **7. `chore(deps): upgrade yargs 13 → 18`**
+  - Update `lib/yargs.js` for the v18 API (factory `yargs()`, `parseAsync`).
 
 - [ ] **8. `chore(deps): upgrade chai 4 → 6`**
   - chai 5+ is ESM-only — task 7 unblocks this.

@@ -1,6 +1,5 @@
-const index = require('../index')
-
-const { assert } = require('chai')
+import { assert } from 'chai'
+import * as index from '../index.js'
 
 describe('index', () => {
   describe('main()', () => {
