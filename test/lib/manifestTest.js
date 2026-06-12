@@ -426,6 +426,123 @@ describe('lib/manifest', () => {
       assert.deepEqual(computed, expected)
     })
   })
+  describe('structureTest support', () => {
+    const baseMetadata = {
+      parameters: { repository: 'aa8y/foo' },
+      templates: { build, push },
+      structureTest: {
+        configs: ['test/common.yaml']
+      },
+      contexts: {
+        alpine: {
+          structureTest: {
+            configs: ['test/alpine.yaml']
+          },
+          tags: {
+            alpine: {}
+          }
+        },
+        jdk: {
+          structureTest: {
+            configs: ['test/{{tag}}.yaml']
+          },
+          tags: {
+            jdk8: {},
+            jdk9: {
+              structureTest: {
+                configs: ['test/jdk9-extra.yaml']
+              }
+            }
+          }
+        },
+        bare: {
+          tags: {
+            bare: {}
+          }
+        }
+      }
+    }
+    it('concatenates configs from global, context, and tag levels.', () => {
+      const expected = [
+        'container-structure-test test --image aa8y/foo:alpine --config test/common.yaml --config test/alpine.yaml',
+        'container-structure-test test --image aa8y/foo:bare --config test/common.yaml',
+        'container-structure-test test --image aa8y/foo:jdk8 --config test/common.yaml --config test/jdk8.yaml',
+        'container-structure-test test --image aa8y/foo:jdk9 --config test/common.yaml --config test/jdk9.yaml --config test/jdk9-extra.yaml'
+      ]
+      const computed = manifest.getCommands(baseMetadata, ['structure-test'])
+      assert.deepEqual(computed, expected)
+    })
+    it('emits no command for a tag with no accumulated configs.', () => {
+      const metadata = {
+        parameters: { repository: 'aa8y/foo' },
+        contexts: {
+          plain: { tags: { plain: {} } }
+        }
+      }
+      const computed = manifest.getCommands(metadata, ['structure-test'])
+      assert.deepEqual(computed, [])
+    })
+    it('honors an explicit image override on the structureTest block.', () => {
+      const metadata = {
+        parameters: { repository: 'aa8y/foo' },
+        structureTest: {
+          image: 'override/{{tag}}',
+          configs: ['test/common.yaml']
+        },
+        contexts: {
+          custom: { tags: { custom: {} } }
+        }
+      }
+      const computed = manifest.getCommands(metadata, ['structure-test'])
+      assert.deepEqual(computed, [
+        'container-structure-test test --image override/custom --config test/common.yaml'
+      ])
+    })
+    it(`accepts 'structure-test' kebab-case alias.`, () => {
+      const metadata = {
+        parameters: { repository: 'aa8y/foo' },
+        'structure-test': { configs: ['test/common.yaml'] },
+        contexts: {
+          alpine: { tags: { alpine: {} } }
+        }
+      }
+      const computed = manifest.getCommands(metadata, ['structure-test'])
+      assert.deepEqual(computed, [
+        'container-structure-test test --image aa8y/foo:alpine --config test/common.yaml'
+      ])
+    })
+    it(`accepts 'structure_test' snake_case alias.`, () => {
+      const metadata = {
+        parameters: { repository: 'aa8y/foo' },
+        'structure_test': { configs: ['test/common.yaml'] },
+        contexts: {
+          alpine: { tags: { alpine: {} } }
+        }
+      }
+      const computed = manifest.getCommands(metadata, ['structure-test'])
+      assert.deepEqual(computed, [
+        'container-structure-test test --image aa8y/foo:alpine --config test/common.yaml'
+      ])
+    })
+    it(`does not leak structureTest into Mustache parameter scope.`, () => {
+      const metadata = {
+        parameters: { repository: 'aa8y/foo' },
+        templates: { test: 'echo {{structureTest}}' },
+        structureTest: { configs: ['test/common.yaml'] },
+        contexts: {
+          c: {
+            tags: {
+              t: { structureTest: { configs: ['test/t.yaml'] } }
+            }
+          }
+        }
+      }
+      // {{structureTest}} should render empty — structureTest is excluded
+      // from the params object passed to Mustache.
+      const computed = manifest.getCommands(metadata, ['test'])
+      assert.deepEqual(computed, ['echo '])
+    })
+  })
   describe('getMetadata()', () => {
     it('loads and parses the manifest at the given path.', async () => {
       const metadata = await manifest.getMetadata('./test/manifest.yml')

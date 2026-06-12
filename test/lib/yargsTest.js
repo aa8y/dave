@@ -17,11 +17,19 @@ describe('lib/yargs', () => {
     })
     it(`returns the all commands when the literal 'all' command is passed.`, async () => {
       const argv = await yargs.argv('all')
-      assert.deepEqual(yargs.commands(argv), ['build', 'test', 'push'])
+      assert.deepEqual(yargs.commands(argv), ['build', 'test', 'structure-test', 'push'])
     })
     it(`'all' should take precedent over all other commands.`, async () => {
       const argv = await yargs.argv('all build template')
-      assert.deepEqual(yargs.commands(argv), ['build', 'test', 'push'])
+      assert.deepEqual(yargs.commands(argv), ['build', 'test', 'structure-test', 'push'])
+    })
+    it(`accepts the 'structure-test' command on its own.`, async () => {
+      const argv = await yargs.argv('structure-test')
+      assert.deepEqual(yargs.commands(argv), ['structure-test'])
+    })
+    it(`sorts 'structure-test' between 'test' and 'push'.`, async () => {
+      const argv = await yargs.argv('push structure-test build test')
+      assert.deepEqual(yargs.commands(argv), ['build', 'test', 'structure-test', 'push'])
     })
   })
   describe('options()', () => {

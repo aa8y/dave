@@ -18,10 +18,13 @@ Dave is a tool which is intended to help with Docker image authoring. It tries t
 
 Dave performs its operations by using metadata in a [YAML](http://yaml.org/) serialized manifest file. The format is explained [later](#manifest-file). The following operations are supported.
 
-* **all**: Executes `build`, `test` and `push` in order.
+* **all**: Executes `build`, `test`, `structure-test` and `push` in order.
 * **build**: Builds one or more images using the given Docker build command template and its arguments.
 * **push**: Pushes a local image using the given Docker push command template and its arguments.
+* **structure-test**: Runs [container-structure-test][cst] against a built image using configs declared in the manifest. Requires the `container-structure-test` binary on `PATH`.
 * **test**: Tests a Docker image by invoking a certain command on the image. A non-zero exit status code fails the test.
+
+[cst]: https://github.com/GoogleContainerTools/container-structure-test
 
 All templating is done using [Mustache](https://mustache.github.io/).
 
@@ -168,6 +171,71 @@ In the last part, the only special thing to be seen is a new local global parame
 
 And while the manifest file can be named anything, the default name assumed is `manifest.yml` in the current directory. Also, although the sample manifest has keys in `lowerCamelCase`, `lower_snake_case` and `lower-kebab-case` are also supported.
 
+### Structure Tests
+
+`dave structure-test` runs [container-structure-test][cst] natively against built images, without you having to write a Mustache template for the command. Declare a `structureTest` block at any level; `configs` is the only required field.
+
+```yaml
+parameters:
+  repository: aa8y/core
+templates:
+  build: docker build -t {{{repository}}}:{{tag}} {{{context}}}
+structureTest:
+  configs:
+    - script/test/common.yaml
+contexts:
+  alpine:
+    structureTest:
+      configs:
+        - script/test/alpine.yaml
+    tags:
+      alpine:
+  jdk/8:
+    structureTest:
+      configs:
+        - script/test/jdk-8.yaml
+    tags:
+      jdk8:
+```
+
+The `configs` list **concatenates** as it trickles global → context → tag (unlike every other field, which child-overrides-parent). So in the snippet above, the `alpine` tag is tested against both `common.yaml` and `alpine.yaml`.
+
+The image reference defaults to `{{{repository}}}:{{tag}}` rendered against the trickled-down parameters. Override it by adding `image: '...'` inside the `structureTest` block.
+
+#### Multiple tags per context
+
+When a context has more than one tag, you can declare configs per tag, or template the path at the context level so it expands per tag. Config paths are Mustache-rendered against the same parameters as build/push templates, so `{{tag}}`, `{{{repository}}}`, and any `tagKeys` you declare all work.
+
+```yaml
+contexts:
+  # Per-tag, explicit — use when file names don't follow a pattern.
+  multi-explicit:
+    tags:
+      tag-a:
+        structureTest:
+          configs:
+            - script/test/tag-a.yaml
+      tag-b:
+        structureTest:
+          configs:
+            - script/test/tag-b.yaml
+
+  # Templated path at the context level — one line, expands per tag.
+  multi-templated:
+    structureTest:
+      configs:
+        - script/test/{{tag}}.yaml
+    tags:
+      tag-a:
+      tag-b:
+```
+
+The two patterns mix freely: a templated default at the context level can be augmented (not replaced) by tag-level configs, since the lists concatenate.
+
+The `container-structure-test` binary is not bundled with `dave` — install it separately (`brew install container-structure-test` on macOS, or download from the [release page][cst-releases]).
+
+[cst-releases]: https://github.com/GoogleContainerTools/container-structure-test/releases
+
 ## Examples
 
 Here are projects where Dave is being utilized to build, test and push images. See `manifest.yml` to see how the metadata has been stored.
@@ -187,6 +255,9 @@ on:
   push:
     branches: [main]
 
+env:
+  CST_VERSION: 1.22.1
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -196,8 +267,14 @@ jobs:
         with:
           node-version: 24
       - run: npm install -g dave
+      - name: Install container-structure-test
+        run: |
+          curl -fsSL -o /tmp/cst \
+            "https://github.com/GoogleContainerTools/container-structure-test/releases/download/v${CST_VERSION}/container-structure-test-linux-amd64"
+          chmod +x /tmp/cst
+          sudo mv /tmp/cst /usr/local/bin/container-structure-test
       - run: dave build
-      - run: dave test
+      - run: dave structure-test
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -206,7 +283,7 @@ jobs:
       - run: dave push
 ```
 
-Drop the login and `dave push` steps if you only want to build and test.
+Drop the CST install + `dave structure-test` steps if your manifest doesn't declare any `structureTest:` blocks, and drop the login + `dave push` steps if you only want to build and test.
 
 ## Future Work
 

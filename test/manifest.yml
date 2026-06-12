@@ -1,12 +1,22 @@
 parameters:
   greeting: Hello
+  repository: aa8y/dave-fixture
 templates:
   build: echo {{greeting}} world
+structureTest:
+  configs:
+    - test/common.yaml
 contexts:
   .:
+    structureTest:
+      configs:
+        - test/dot.yaml
     tags:
       begin:
       end:
         greeting: Goodbye
       wait:
         greeting: Stop
+        structureTest:
+          configs:
+            - test/wait.yaml
