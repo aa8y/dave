@@ -2,6 +2,7 @@
 
 import { promisify } from 'node:util'
 import { exec as execCb } from 'node:child_process'
+import { realpathSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import * as manifest from './lib/manifest.js'
@@ -30,7 +31,10 @@ export async function main(args = process.argv.slice(2)) {
   return 'All commands completed successfully.'
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+// Resolve symlinks so the entry check still matches when invoked via
+// `node_modules/.bin/dave`, which npm installs as a symlink to this file.
+const invokedAs = process.argv[1] ? realpathSync(process.argv[1]) : ''
+if (invokedAs === fileURLToPath(import.meta.url)) {
   main().then(
     (msg) => console.log(msg),
     (err) => {
