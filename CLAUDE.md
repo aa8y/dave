@@ -4,7 +4,7 @@ CLI tool that builds, tests, and pushes Docker images driven by a YAML manifest.
 
 ## Entry points
 
-- `index.js` — bin (`dave`). Parses argv, loads manifest, computes the full list of shell commands, and awaits them one at a time in a `for…of` loop. `runCommand` is `promisify(child_process.exec)` with logging around it.
+- `index.js` — bin (`dave`). Parses argv, loads manifest, computes the full list of shell commands, and awaits them one at a time in a `for…of` loop. `runCommand` wraps `child_process.spawn` with `shell: true` and `stdio: 'inherit'` (streams child output live and avoids exec's maxBuffer limit on verbose commands), resolving on exit code 0 and rejecting with `Command failed: <command>` otherwise.
 - `lib/yargs.js` — argv parsing on top of yargs 18 (`yargs(args).command(...).parseAsync()`). Subcommands: `build | test | structure-test | push | all`. Options: `--context/-c`, `--tags/-t` (string array — `string: true` keeps `1.0` from collapsing to a Number), `--manifest/-m` (default `./manifest.yml`). `all` expands to `['build','test','structure-test','push']`. Commands are always reordered to `build → test → structure-test → push`. If `--tags` is given without `--context`, context defaults to `'.'`.
 - `lib/manifest.js` — manifest reader and command builder. Walks contexts (sorted) × tags (sorted) × types (`build|test|structure-test|push`), merging parameters/templates with the inline `deepMerge` helper and rendering Mustache. `tagKeys` lets a tag name be reused as another parameter (e.g. `sparkVersion` = tag); `tag_keys` and `tag-keys` aliases are also accepted.
 

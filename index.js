@@ -1,20 +1,34 @@
 #!/usr/bin/env node
 
-import { promisify } from 'node:util'
-import { exec as execCb } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import { realpathSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import * as manifest from './lib/manifest.js'
 import * as yargs from './lib/yargs.js'
 
-const exec = promisify(execCb)
-
-export async function runCommand(command) {
+// Run a shell command, streaming its stdout/stderr straight to our own. We use
+// spawn with inherited stdio rather than exec() because exec buffers the whole
+// child output in memory and rejects once it exceeds maxBuffer (~1 MB) — a
+// verbose command such as container-structure-test on a large image trips that
+// limit. Inheriting also means the output appears live instead of only after
+// the (often long-running) command finishes. `shell: true` preserves shell
+// features (pipes, globs, `&&`, special chars) that callers rely on.
+export function runCommand(command) {
   console.log(`Running: ${command}`)
-  const { stdout, stderr } = await exec(command)
-  console.log(stdout)
-  console.error(stderr)
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, { shell: true, stdio: 'inherit' })
+    child.on('error', reject)
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve()
+      } else {
+        const err = new Error(`Command failed: ${command}`)
+        err.code = code
+        reject(err)
+      }
+    })
+  })
 }
 
 export async function main(args = process.argv.slice(2)) {
