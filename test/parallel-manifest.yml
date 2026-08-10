@@ -1,0 +1,19 @@
+# Fixture for the concurrent executor: three tags whose build command prints
+# marker lines to stdout and stderr slowly enough that unbuffered concurrent
+# children would interleave with each other. Tests assert dave replays each
+# command's output as one contiguous block.
+parameters:
+  repository: aa8y/dave-fixture
+templates:
+  build: >-
+    node -e "const s = (ms) => new Promise((r) => setTimeout(r, ms));
+    (async () => { for (let i = 0; i < 3; i++) {
+    console.log('{{tag}}-marker-out-' + i);
+    console.error('{{tag}}-marker-err-' + i);
+    await s(40) } })()"
+contexts:
+  .:
+    tags:
+      c1:
+      c2:
+      c3:

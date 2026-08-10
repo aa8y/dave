@@ -34,30 +34,70 @@ describe('lib/yargs', () => {
   })
   describe('options()', () => {
     const manifest = './manifest.yml'
+    // Every option with a default always comes through options().
+    const defaults = { jobs: 1, keepGoing: false, manifest }
 
-    it('returns an object with default manifest if no arguments are passed.', async () => {
+    it('returns an object with the defaults if no arguments are passed.', async () => {
       const argv = await yargs.argv('build')
-      assert.deepEqual(yargs.options(argv), { manifest })
+      assert.deepEqual(yargs.options(argv), defaults)
     })
     it('returns the context when present.', async () => {
       const argv = await yargs.argv('build --context .')
-      assert.deepEqual(yargs.options(argv), { context: '.', manifest })
+      assert.deepEqual(yargs.options(argv), { context: '.', ...defaults })
     })
     it('returns the context and tags when both are present.', async () => {
       const argv = await yargs.argv('build --context . --tags 1.0.2 1.0.3')
-      assert.deepEqual(yargs.options(argv), { context: '.', manifest, tags: ['1.0.2', '1.0.3'] })
+      assert.deepEqual(yargs.options(argv), { context: '.', ...defaults, tags: ['1.0.2', '1.0.3'] })
     })
     it('returns string tags even when numbers are passed.', async () => {
       const argv = await yargs.argv('build --context . --tags 1.0 1')
-      assert.deepEqual(yargs.options(argv), { context: '.', manifest, tags: ['1.0', '1'] })
+      assert.deepEqual(yargs.options(argv), { context: '.', ...defaults, tags: ['1.0', '1'] })
     })
     it(`returns an object with default context '.' if tags are passed but no context is.`, async () => {
       const argv = await yargs.argv('build --tags 1.0 1')
-      assert.deepEqual(yargs.options(argv), { context: '.', manifest, tags: ['1.0', '1'] })
+      assert.deepEqual(yargs.options(argv), { context: '.', ...defaults, tags: ['1.0', '1'] })
     })
     it('returns the given manifest path when passed.', async () => {
       const argv = await yargs.argv('build --manifest /config/manifest.yaml')
-      assert.deepEqual(yargs.options(argv), { manifest: '/config/manifest.yaml' })
+      assert.deepEqual(yargs.options(argv), { ...defaults, manifest: '/config/manifest.yaml' })
+    })
+  })
+  describe('options() --jobs', () => {
+    it('defaults to 1.', async () => {
+      const argv = await yargs.argv('build')
+      assert.strictEqual(yargs.options(argv).jobs, 1)
+    })
+    it('parses -j 4.', async () => {
+      const argv = await yargs.argv('build -j 4')
+      assert.strictEqual(yargs.options(argv).jobs, 4)
+    })
+    it('parses --jobs 2.', async () => {
+      const argv = await yargs.argv('build --jobs 2')
+      assert.strictEqual(yargs.options(argv).jobs, 2)
+    })
+    for (const bad of ['0', '-1', '1.5', 'abc']) {
+      it(`rejects --jobs ${bad}.`, async () => {
+        try {
+          await yargs.argv(`build --jobs ${bad}`)
+          assert.fail('expected rejection')
+        } catch (err) {
+          assert.match(err.message, /--jobs must be a whole number >= 1/)
+        }
+      })
+    }
+  })
+  describe('options() --keep-going', () => {
+    it('defaults to false.', async () => {
+      const argv = await yargs.argv('build')
+      assert.strictEqual(yargs.options(argv).keepGoing, false)
+    })
+    it('parses -k.', async () => {
+      const argv = await yargs.argv('build -k')
+      assert.strictEqual(yargs.options(argv).keepGoing, true)
+    })
+    it('parses --keep-going.', async () => {
+      const argv = await yargs.argv('build --keep-going')
+      assert.strictEqual(yargs.options(argv).keepGoing, true)
     })
   })
 })

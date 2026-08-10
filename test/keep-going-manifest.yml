@@ -1,0 +1,17 @@
+# Fixture for failure handling and --keep-going: tags a and c fail their
+# build with distinct exit codes, b succeeds. The test template drops a
+# marker file so tests can assert the test phase never starts once build has
+# failed. Tests export DAVE_MARKER_DIR; `shell: true` expands it at run time.
+parameters:
+  repository: aa8y/dave-fixture
+templates:
+  build: '{{#fail}}exit {{fail}}{{/fail}}{{^fail}}true{{/fail}}'
+  test: touch "$DAVE_MARKER_DIR/test-ran"
+contexts:
+  .:
+    tags:
+      a:
+        fail: 3
+      b:
+      c:
+        fail: 5
