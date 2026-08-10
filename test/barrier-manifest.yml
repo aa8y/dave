@@ -1,0 +1,14 @@
+# Fixture for the barrier between command types: each tag's build sleeps
+# briefly and then writes a file its test command reads back. If a test could
+# start before every build had finished, the cat would fail on a missing
+# file. Tests export DAVE_MARKER_DIR; `shell: true` expands it at run time.
+parameters:
+  repository: aa8y/dave-fixture
+templates:
+  build: sleep 0.2 && echo {{tag}}-built > "$DAVE_MARKER_DIR/{{tag}}.txt"
+  test: cat "$DAVE_MARKER_DIR/{{tag}}.txt"
+contexts:
+  .:
+    tags:
+      a:
+      b:

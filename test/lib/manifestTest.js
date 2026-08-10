@@ -6,41 +6,44 @@ const build = 'docker build -t {{{repository}}}:{{tag}} --build-arg BAR={{bar}} 
 const push = 'docker push {{{repository}}}:{{tag}}'
 const test = 'docker run --rm -it {{{repository}}}:{{tag}} test.sh'
 
-describe('lib/manifest', () => {
-  describe('getCommands()', () => {
-    const metadata = {
+// Shared by getCommands(), getCommandsByType() and the equivalence checks
+// between the two, so all three are asserted against the very same manifest.
+const metadata = {
+  parameters: {
+    bar: 'metalRod',
+    repository: 'aa8y/foo'
+  },
+  templates: { push, test },
+  contexts: {
+    stable: {
+      templates: { build },
+      tags: {
+        'latest': { bar: 'airPressure' },
+        '2.2.0': { bar: 'airPressure' },
+        '1.6.1': {}
+      }
+    },
+    edge: {
+      tagKeys: ['branch'],
       parameters: {
-        bar: 'metalRod',
-        repository: 'aa8y/foo'
+        bar: 'exam',
+        baz: 'ooka'
       },
-      templates: { push, test },
-      contexts: {
-        stable: {
-          templates: { build },
-          tags: {
-            'latest': { bar: 'airPressure' },
-            '2.2.0': { bar: 'airPressure' },
-            '1.6.1': {}
-          }
-        },
-        edge: {
-          tagKeys: ['branch'],
-          parameters: {
-            bar: 'exam',
-            baz: 'ooka'
-          },
-          templates: {
-            build: 'docker build -t {{{repository}}}:{{tag}} --build-arg BAR={{bar}} ' +
-              '--build-arg BAZ={{baz}} --build-arg BRANCH={{branch}} {{context}}'
-          },
-          tags: {
-            edge: { branch: 'master' },
-            edge2: {},
-            edge1: { bar: 'airPressure' }
-          }
-        }
+      templates: {
+        build: 'docker build -t {{{repository}}}:{{tag}} --build-arg BAR={{bar}} ' +
+          '--build-arg BAZ={{baz}} --build-arg BRANCH={{branch}} {{context}}'
+      },
+      tags: {
+        edge: { branch: 'master' },
+        edge2: {},
+        edge1: { bar: 'airPressure' }
       }
     }
+  }
+}
+
+describe('lib/manifest', () => {
+  describe('getCommands()', () => {
     it('returns all commands for all contexts and tags.', () => {
       const expected = [
         'docker build -t aa8y/foo:edge --build-arg BAR=exam --build-arg BAZ=ooka ' +
@@ -113,6 +116,104 @@ describe('lib/manifest', () => {
 
       assert.deepEqual(computed, expected)
     })
+  })
+  describe('getCommandsByType()', () => {
+    const expectedBuild = [
+      'docker build -t aa8y/foo:edge --build-arg BAR=exam --build-arg BAZ=ooka ' +
+        '--build-arg BRANCH=master edge',
+      'docker build -t aa8y/foo:edge1 --build-arg BAR=airPressure --build-arg BAZ=ooka ' +
+        '--build-arg BRANCH=edge1 edge',
+      'docker build -t aa8y/foo:edge2 --build-arg BAR=exam --build-arg BAZ=ooka ' +
+        '--build-arg BRANCH=edge2 edge',
+      'docker build -t aa8y/foo:1.6.1 --build-arg BAR=metalRod stable',
+      'docker build -t aa8y/foo:2.2.0 --build-arg BAR=airPressure stable',
+      'docker build -t aa8y/foo:latest --build-arg BAR=airPressure stable'
+    ]
+    const expectedTest = [
+      'docker run --rm -it aa8y/foo:edge test.sh',
+      'docker run --rm -it aa8y/foo:edge1 test.sh',
+      'docker run --rm -it aa8y/foo:edge2 test.sh',
+      'docker run --rm -it aa8y/foo:1.6.1 test.sh',
+      'docker run --rm -it aa8y/foo:2.2.0 test.sh',
+      'docker run --rm -it aa8y/foo:latest test.sh'
+    ]
+    const expectedPush = [
+      'docker push aa8y/foo:edge',
+      'docker push aa8y/foo:edge1',
+      'docker push aa8y/foo:edge2',
+      'docker push aa8y/foo:1.6.1',
+      'docker push aa8y/foo:2.2.0',
+      'docker push aa8y/foo:latest'
+    ]
+
+    it('groups commands by type, across all contexts and tags.', () => {
+      const expected = [
+        ['build', expectedBuild],
+        ['test', expectedTest],
+        ['push', expectedPush]
+      ]
+      const computed = manifest.getCommandsByType(metadata)
+
+      assert.deepEqual(computed, expected)
+    })
+    it('returns the pairs in the order the types were passed.', () => {
+      const expected = [
+        ['push', expectedPush],
+        ['test', expectedTest]
+      ]
+      const computed = manifest.getCommandsByType(metadata, ['push', 'test'])
+
+      assert.deepEqual(computed, expected)
+    })
+    it('honors the context and tags passed.', () => {
+      const expected = [
+        ['build', [
+          'docker build -t aa8y/foo:1.6.1 --build-arg BAR=metalRod stable',
+          'docker build -t aa8y/foo:latest --build-arg BAR=airPressure stable'
+        ]],
+        ['push', [
+          'docker push aa8y/foo:1.6.1',
+          'docker push aa8y/foo:latest'
+        ]]
+      ]
+      const computed =
+        manifest.getCommandsByType(metadata, ['build', 'push'], 'stable', ['1.6.1', 'latest'])
+
+      assert.deepEqual(computed, expected)
+    })
+    it('omits types for which no command was generated.', () => {
+      // Nothing in the fixture declares structureTest configs, so that type
+      // must not show up as an empty pair.
+      const computed = manifest.getCommandsByType(metadata, ['build', 'structure-test', 'push'])
+      const computedTypes = computed.map(([type]) => type)
+
+      assert.deepEqual(computedTypes, ['build', 'push'])
+    })
+    it('returns an empty array when nothing matches.', () => {
+      const computed = manifest.getCommandsByType(metadata, ['structure-test'])
+
+      assert.deepEqual(computed, [])
+    })
+  })
+  describe('getCommands()/getCommandsByType() equivalence', () => {
+    const flatten = (commandsByType) => commandsByType.flatMap(([, commands]) => commands)
+    const cases = [
+      { desc: 'no arguments are passed', args: [] },
+      { desc: 'a single type and a context are passed', args: [['build'], 'edge'] },
+      { desc: 'multiple types are passed', args: [['test', 'push']] },
+      {
+        desc: 'types, a context and tags are passed',
+        args: [['build', 'push'], 'stable', ['1.6.1', 'latest']]
+      }
+    ]
+    for (const { desc, args } of cases) {
+      it(`flattens to the same commands, in the same order, when ${desc}.`, () => {
+        const expected = manifest.getCommands(metadata, ...args)
+        const computed = flatten(manifest.getCommandsByType(metadata, ...args))
+
+        assert.deepEqual(computed, expected)
+      })
+    }
   })
   describe('getContextCommands()', () => {
     const contextMeta = {
@@ -541,6 +642,220 @@ describe('lib/manifest', () => {
       // from the params object passed to Mustache.
       const computed = manifest.getCommands(metadata, ['test'])
       assert.deepEqual(computed, ['echo '])
+    })
+  })
+  describe('empty template renders', () => {
+    // A template wrapped in an inverted section renders to nothing for tags
+    // which set the flag — the way a manifest says "this tag is an alias of
+    // another one, there is nothing to build for it". Such a command must be
+    // dropped rather than handed to the shell as an empty string.
+    const aliasMetadata = {
+      parameters: { repository: 'aa8y/foo' },
+      templates: {
+        build: '{{^alias}}docker build -t {{{repository}}}:{{tag}} {{context}}{{/alias}}',
+        push
+      },
+      contexts: {
+        c: {
+          tags: {
+            base: {},
+            latest: { alias: true }
+          }
+        }
+      }
+    }
+
+    it('skips the command of a tag whose template renders empty.', () => {
+      const expected = ['docker build -t aa8y/foo:base c']
+      const computed = manifest.getCommands(aliasMetadata, ['build'])
+
+      assert.deepEqual(computed, expected)
+    })
+    it('leaves the other types of the skipped tag alone.', () => {
+      const expected = [
+        'docker push aa8y/foo:base',
+        'docker push aa8y/foo:latest'
+      ]
+      const computed = manifest.getCommands(aliasMetadata, ['push'])
+
+      assert.deepEqual(computed, expected)
+    })
+    it('drops the type from the grouping when every tag renders empty.', () => {
+      const allAliases = {
+        parameters: { repository: 'aa8y/foo' },
+        templates: aliasMetadata.templates,
+        contexts: {
+          c: { tags: { latest: { alias: true }, stable: { alias: true } } }
+        }
+      }
+      const computed = manifest.getCommandsByType(allAliases, ['build', 'push'])
+      const computedTypes = computed.map(([type]) => type)
+
+      assert.deepEqual(computedTypes, ['push'])
+    })
+    it('skips a command which renders to whitespace only.', () => {
+      const tagMeta = {
+        parameters: { skip: true, tag: '1.6.1' },
+        templates: {
+          build: '  {{^skip}}docker build{{/skip}}  ',
+          push: 'docker push aa8y/foo:{{tag}}'
+        }
+      }
+      const expected = { push: 'docker push aa8y/foo:1.6.1' }
+      const computed = manifest.getTagCommands(tagMeta, ['build', 'push'])
+
+      assert.deepEqual(computed, expected)
+    })
+    it('keeps a rendered command untrimmed when it has content.', () => {
+      const tagMeta = {
+        parameters: { tag: '1.6.1' },
+        templates: { build: '  docker build {{tag}}  ' }
+      }
+      const expected = { build: '  docker build 1.6.1  ' }
+      const computed = manifest.getTagCommands(tagMeta, ['build'])
+
+      assert.deepEqual(computed, expected)
+    })
+    it('supports the alias pattern when read from a manifest file.', async () => {
+      const fixture = await manifest.getMetadata('./test/retag-manifest.yml')
+      const expected = [
+        'docker build -t aa8y/dave-fixture:base .',
+        'docker push aa8y/dave-fixture:base',
+        'docker push aa8y/dave-fixture:latest'
+      ]
+      const computed = manifest.getCommands(fixture, ['build', 'push'])
+
+      assert.deepEqual(computed, expected)
+    })
+  })
+  describe('structureTest opt-out', () => {
+    it('gives a tag which opts out no structure-test command.', () => {
+      const metadata = {
+        parameters: { repository: 'aa8y/foo' },
+        structureTest: { configs: ['test/common.yaml'] },
+        contexts: {
+          alpine: {
+            structureTest: { configs: ['test/alpine.yaml'] },
+            tags: {
+              alpine: {},
+              slim: { structureTest: false }
+            }
+          }
+        }
+      }
+      const expected = [
+        'container-structure-test test --image aa8y/foo:alpine ' +
+          '--config test/common.yaml --config test/alpine.yaml'
+      ]
+      const computed = manifest.getCommands(metadata, ['structure-test'])
+
+      assert.deepEqual(computed, expected)
+    })
+    it('leaves the other command types of an opted-out tag alone.', () => {
+      const metadata = {
+        parameters: { repository: 'aa8y/foo' },
+        templates: { push },
+        structureTest: { configs: ['test/common.yaml'] },
+        contexts: {
+          alpine: {
+            tags: {
+              alpine: {},
+              slim: { structureTest: false }
+            }
+          }
+        }
+      }
+      const expected = [
+        'docker push aa8y/foo:alpine',
+        'docker push aa8y/foo:slim'
+      ]
+      const computed = manifest.getCommands(metadata, ['push'])
+
+      assert.deepEqual(computed, expected)
+    })
+    it('accepts the kebab-case and snake_case aliases of the opt-out.', () => {
+      const metadata = {
+        parameters: { repository: 'aa8y/foo' },
+        structureTest: { configs: ['test/common.yaml'] },
+        contexts: {
+          alpine: {
+            tags: {
+              alpine: {},
+              kebab: { 'structure-test': false },
+              snake: { 'structure_test': false }
+            }
+          }
+        }
+      }
+      const expected = [
+        'container-structure-test test --image aa8y/foo:alpine --config test/common.yaml'
+      ]
+      const computed = manifest.getCommands(metadata, ['structure-test'])
+
+      assert.deepEqual(computed, expected)
+    })
+    it('disables structure tests for every tag of a context which opts out.', () => {
+      const metadata = {
+        parameters: { repository: 'aa8y/foo' },
+        structureTest: { configs: ['test/common.yaml'] },
+        contexts: {
+          off: {
+            structureTest: false,
+            tags: { a: {}, b: {} }
+          },
+          on: {
+            tags: { c: {} }
+          }
+        }
+      }
+      const expected = [
+        'container-structure-test test --image aa8y/foo:c --config test/common.yaml'
+      ]
+      const computed = manifest.getCommands(metadata, ['structure-test'])
+
+      assert.deepEqual(computed, expected)
+    })
+    it('lets a tag re-enable with its own configs under an opted-out context.', () => {
+      const metadata = {
+        parameters: { repository: 'aa8y/foo' },
+        structureTest: { configs: ['test/common.yaml'] },
+        contexts: {
+          off: {
+            structureTest: false,
+            tags: {
+              a: {},
+              b: { structureTest: { configs: ['test/b.yaml'] } }
+            }
+          }
+        }
+      }
+      // Only b's own configs — the opt-out cut the trickle-down, so the
+      // global common.yaml is gone.
+      const expected = [
+        'container-structure-test test --image aa8y/foo:b --config test/b.yaml'
+      ]
+      const computed = manifest.getCommands(metadata, ['structure-test'])
+
+      assert.deepEqual(computed, expected)
+    })
+    it('lets a context re-enable with its own configs after a global opt-out.', () => {
+      const metadata = {
+        parameters: { repository: 'aa8y/foo' },
+        structureTest: false,
+        contexts: {
+          bare: { tags: { bare: {} } },
+          own: {
+            structureTest: { configs: ['test/own.yaml'] },
+            tags: { own: {} }
+          }
+        }
+      }
+      const expected = [
+        'container-structure-test test --image aa8y/foo:own --config test/own.yaml'
+      ]
+      const computed = manifest.getCommands(metadata, ['structure-test'])
+
+      assert.deepEqual(computed, expected)
     })
   })
   describe('getMetadata()', () => {
