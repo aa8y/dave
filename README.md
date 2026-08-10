@@ -39,8 +39,36 @@ The options that it accepts are:
 * `--context` or `-c`: Accepts a string denoting the location of the `Dockerfile`. If just the context is passed, the command(s) would be invoked on all tags pertaining to the context.
 * `--tags` or `-t`: Accepts a list tags separated by spaces. Requires the context to be passed as well. If the context is not passed, the tags would be ignored.
 * `--manifest` or `-m`: Accepts a path to the manifest file. Defaults to `manifest.yml` in the current directory.
+* `--jobs` or `-j`: Accepts a whole number `N` >= 1 denoting how many commands of the same type may run concurrently. Defaults to `1`.
+* `--keep-going` or `-k`: A flag. On a failure, keeps running the remaining commands of the same type instead of stopping at the first one.
 
 If no other parameters are passed, the command(s) would be executed for all contexts and all tags in the manifest.
+
+### Running Commands Concurrently
+
+By default Dave runs one command at a time. `--jobs`/`-j` lets the commands of a single type run concurrently, which is worth it when a context has several tags whose builds do not depend on each other.
+
+```
+dave all --jobs 4
+```
+
+The guarantees are:
+
+* Command types remain strictly ordered: `build` → `test` → `structure-test` → `push`, with a barrier between types. Every command of a type finishes before the first command of the next type starts, so nothing is ever tested or pushed before it has been built. Only commands *within* a type run concurrently.
+* At `-j 1`, which is the default, the behavior is identical to previous versions: commands run one at a time and each command's output streams live to your terminal as it is produced.
+* At `-j` greater than `1`, each command's output is buffered and printed as one contiguous block when that command finishes, so concurrent commands never interleave their output. The trade-off is that you see a command's output only after it completes.
+
+### Continuing After a Failure
+
+Without `--keep-going`, the first failing command ends the run. With `--keep-going`/`-k`, the remaining commands *of the same type* still run.
+
+```
+dave build --keep-going
+```
+
+Later types never start, with or without the flag — if any `build` fails, no `test`, `structure-test` or `push` command is run. All the failures are summarized at the end and the exit code is non-zero.
+
+`--keep-going` combines with `--jobs`, e.g. `dave build -j 4 -k` builds every tag it can, four at a time, and reports every tag that failed.
 
 ## Manifest File
 
@@ -171,6 +199,28 @@ In the last part, the only special thing to be seen is a new local global parame
 
 And while the manifest file can be named anything, the default name assumed is `manifest.yml` in the current directory. Also, although the sample manifest has keys in `lowerCamelCase`, `lower_snake_case` and `lower-kebab-case` are also supported.
 
+### Skipping a Command for a Tag
+
+A template which renders to nothing (or to only whitespace) for a tag produces **no** command for that tag, rather than handing an empty command to the shell. That is how a tag opts out of a command type it doesn't need.
+
+The typical use is an alias tag, i.e. a tag which is only a retag of another image and therefore has nothing of its own to build. Wrap the template in a Mustache inverted section and set the flag on the tags to be skipped.
+
+```yaml
+templates:
+  build: '{{^retagFrom}}docker build -t {{{repository}}}:{{tag}} {{context}}{{/retagFrom}}'
+  push: docker push {{{repository}}}:{{tag}}
+contexts:
+  .:
+    tags:
+      base:
+      latest:
+        retagFrom: base
+```
+
+Here the `latest` tag gets no `build` command, while it is still pushed like any other tag. Note that the template has to be quoted, since a YAML scalar starting with `{` would otherwise be read as a flow mapping.
+
+This applies to the templated command types. The `structure-test` command is synthesized by Dave rather than templated, so it has its own opt-out, described below.
+
 ### Structure Tests
 
 `dave structure-test` runs [container-structure-test][cst] natively against built images, without you having to write a Mustache template for the command. Declare a `structureTest` block at any level; `configs` is the only required field.
@@ -201,6 +251,33 @@ contexts:
 The `configs` list **concatenates** as it trickles global → context → tag (unlike every other field, which child-overrides-parent). So in the snippet above, the `alpine` tag is tested against both `common.yaml` and `alpine.yaml`.
 
 The image reference defaults to `{{{repository}}}:{{tag}}` rendered against the trickled-down parameters. Override it by adding `image: '...'` inside the `structureTest` block.
+
+#### Opting Out
+
+Since `configs` concatenate on the way down, a global config would otherwise apply to every tag. Set `structureTest: false` on a context or a tag to opt it out: everything inherited from above is dropped, so that tag gets no `structure-test` command at all.
+
+```yaml
+structureTest:
+  configs:
+    - script/test/common.yaml
+contexts:
+  alpine:
+    tags:
+      alpine:
+  # No structure test for anything in this context.
+  scratch:
+    structureTest: false
+    tags:
+      scratch:
+  jdk/8:
+    tags:
+      jdk8:
+      # ...or for just this one tag.
+      jdk8-slim:
+        structureTest: false
+```
+
+A tag under an opted-out context can still re-enable structure testing by declaring its own `configs`; it simply starts from nothing instead of inheriting the configs from above.
 
 #### Multiple tags per context
 
