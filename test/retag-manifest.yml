@@ -1,0 +1,17 @@
+# Fixture for the "alias tag" pattern. A tag which is only a retag of another
+# image has nothing to build, so its build template is wrapped in a Mustache
+# inverted section and renders to nothing for those tags — dave then skips the
+# command instead of handing an empty string to the shell. The tag is still
+# pushed like any other. The template has to be quoted because a scalar
+# starting with '{' would otherwise be read as a YAML flow mapping.
+parameters:
+  repository: aa8y/dave-fixture
+templates:
+  build: '{{^alias}}docker build -t {{{repository}}}:{{tag}} {{context}}{{/alias}}'
+  push: docker push {{{repository}}}:{{tag}}
+contexts:
+  .:
+    tags:
+      base:
+      latest:
+        alias: true
