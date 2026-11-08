@@ -2,6 +2,12 @@
 
 All notable changes to Dave are documented here. Releases are tagged as `vX.Y.Z`.
 
+## 0.5.1
+
+### Security
+
+* Dave now requires js-yaml `^4.3.2`, up from `^4.2.0`. Versions 4.0.0 to 4.3.1 have a high-severity advisory, [GHSA-2883-xcg3-v3hh](https://github.com/advisories/GHSA-2883-xcg3-v3hh): `maxTotalMergeKeys` does not limit CPU use for empty merge sources. The lockfile also moves dev dependencies to patched versions of brace-expansion.
+
 ## 0.5.0
 
 ### Added
