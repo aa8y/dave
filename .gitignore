@@ -5,3 +5,9 @@
 # Node.js
 coverage/
 node_modules/
+
+# Local internal documentation
+/.internal/
+
+# macOS
+.DS_Store
